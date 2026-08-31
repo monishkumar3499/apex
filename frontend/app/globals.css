@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   APEX design tokens
+
+   One accent (amber) carries every interactive and "in progress" state.
+   Semantic hues are reserved for meaning — emerald for done, rose for behind,
+   sky for review — so colour always tells the learner something.
+
+   Channels are stored as raw RGB triples so Tailwind can apply opacity.
+   ========================================================================== */
+
+@layer base {
+  :root {
+    --bg:            250 250 249;   /* warm off-white, easier than pure #fff */
+    --bg-subtle:     245 245 244;
+    --surface:       255 255 255;
+    --surface-2:     250 250 249;
+    --surface-3:     245 245 244;
+    --border:        231 229 228;
+    --border-strong: 214 211 209;
+
+    --text:          28 25 23;
+    --text-muted:    120 113 108;
+    --text-faint:    168 162 158;
+
+    --accent:        180 83 9;      /* amber-700 — passes AA on white */
+    --accent-hover:  146 64 14;
+    --accent-soft:   254 243 199;
+    --accent-text:   255 255 255;
+
+    --success:       4 120 87;
+    --success-soft:  209 250 229;
+    --warn:          180 83 9;
+    --warn-soft:     254 243 199;
+    --danger:        190 18 60;
+    --danger-soft:   255 228 230;
+    --info:          3 105 161;
+    --info-soft:     224 242 254;
+
+    --ring:          180 83 9;
+    --shadow-color:  28 25 23;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    --bg:            9 12 20;       /* deep navy-black study surface */
+    --bg-subtle:     13 17 27;
+    --surface:       17 23 38;
+    --surface-2:     22 30 48;
+    --surface-3:     29 39 61;
+    --border:        33 44 68;
+    --border-strong: 51 65 95;
+
+    --text:          232 237 246;
+    --text-muted:    139 152 176;
+    --text-faint:    98 110 134;
+
+    --accent:        245 165 36;    /* amber — the single point of warmth */
+    --accent-hover:  255 190 84;
+    --accent-soft:   58 41 11;
+    --accent-text:   14 18 28;
+
+    --success:       52 211 153;
+    --success-soft:  6 44 36;
+    --warn:          251 191 36;
+    --warn-soft:     56 38 6;
+    --danger:        251 113 133;
+    --danger-soft:   60 15 27;
+    --info:          56 189 248;
+    --info-soft:     8 40 58;
+
+    --ring:          245 165 36;
+    --shadow-color:  0 0 0;
+
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: rgb(var(--border));
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: rgb(var(--bg));
+    color: rgb(var(--text));
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tabular figures everywhere a number changes — no layout jitter. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: rgb(var(--accent) / 0.25);
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--ring));
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--border-strong));
+    border: 3px solid rgb(var(--bg));
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--text-faint)); }
+}
+
+@layer components {
+  /* ------------------------------------------------------------------
+     Data-viz ramp
+
+     A single-hue amber sequential scale, low → high magnitude. Both modes
+     were generated at a fixed OKLCH hue (75°) and validated: monotone
+     lightness, ≥0.06 ΔL between adjacent steps, ≤1° hue spread, and a
+     light-end step that clears 2:1 against its own surface. Never edit a
+     step by eye — regenerate and re-validate the whole ramp.
+     ------------------------------------------------------------------ */
+  .viz-heat {
+    --heat-0: rgb(var(--surface-3));
+    --heat-1: #efa72e;
+    --heat-2: #c78b24;
+    --heat-3: #a16f1b;
+    --heat-4: #7c5512;
+  }
+
+  .dark .viz-heat {
+    --heat-1: #6e4b0e;
+    --heat-2: #996a19;
+    --heat-3: #c78b24;
+    --heat-4: #f7ad30;
+  }
+
+  /* Layered elevation — a hairline plus a soft drop, never a heavy box. */
+  .surface {
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+    box-shadow: 0 1px 2px rgb(var(--shadow-color) / 0.04);
+  }
+
+  .surface-raised {
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-color) / 0.06),
+      0 8px 24px -8px rgb(var(--shadow-color) / 0.10);
+  }
+
+  /* Focus surface: the reading pane during a study session. */
+  .focus-pane {
+    background:
+      radial-gradient(120% 90% at 50% -20%, rgb(var(--accent) / 0.07), transparent 55%),
+      rgb(var(--surface));
+  }
+
+  .hairline {
+    background-image: linear-gradient(to right, transparent, rgb(var(--border)), transparent);
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--surface-2)) 0%,
+      rgb(var(--surface-3)) 50%,
+      rgb(var(--surface-2)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

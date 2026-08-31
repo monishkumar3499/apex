@@ -1,0 +1,277 @@
+import { searchVideos, searchPlaylists } from '../tools/youtube';
+import { searchWeb } from '../tools/tavily';
+import { scoreYouTube, scoreWeb, dedupe, type Curated } from './score';
+import { similarity, keywordCoverage } from './text';
+import { logger } from '../logger/pino';
+
+/**
+ * Deterministic resource curation.
+ *
+ * The model contributes only short natural-language *search intents*. Every
+ * URL, title, duration and thumbnail comes from a real API response, and the
+ * topic↔resource binding is computed here with text similarity. That means:
+ *   • zero hallucinated links,
+ *   • zero tokens spent restating URLs the model already saw,
+ *   • a resource can be re-ranked or refreshed without another model call.
+ *
+ * Curation runs in two passes. The first searches once per unit, which covers
+ * most topics cheaply (YouTube `search.list` costs 100 quota units a call). The
+ * second pass targets only the topics the first left uncovered, so quota is
+ * spent where coverage is actually missing.
+ */
+
+export interface CurationTopic {
+  idx: number;
+  title: string;
+  summary?: string;
+  keywords: string[];
+  unitIdx: number;
+}
+
+export interface CurationUnit {
+  idx: number;
+  title: string;
+  /** 1–2 short queries supplied by the blueprint model. */
+  queries: string[];
+}
+
+export interface CurationInput {
+  subject: string;
+  prepType: 'exam' | 'skill' | 'hybrid';
+  units: CurationUnit[];
+  topics: CurationTopic[];
+  /** Ceiling on first-pass YouTube searches (one per unit). */
+  videoSearchBudget?: number;
+  webSearchBudget?: number;
+  /** Ceiling on second-pass searches for topics left uncovered. */
+  gapSearchBudget?: number;
+}
+
+/** A curated resource plus the unit whose search surfaced it. */
+type Sourced = Curated & { unitIdx: number | null };
+
+export interface CurationResult {
+  resources: Curated[];
+  /** topic idx → resource urls, best first */
+  assignments: Map<number, string[]>;
+  stats: {
+    videoSearches: number;
+    webSearches: number;
+    gapSearches: number;
+    found: number;
+    assigned: number;
+    /** Topics that ended up with a genuinely on-topic resource. */
+    covered: number;
+  };
+}
+
+const RESOURCES_PER_TOPIC = 3;
+
+/**
+ * Minimum similarity for a resource to be called "about this topic".
+ *
+ * Below this it is unit-adjacent material at best. Attaching a sequential-logic
+ * video to an RC-transients topic is worse than attaching nothing: it teaches
+ * the wrong thing and quietly destroys trust in every other recommendation.
+ */
+const RELEVANCE_FLOOR = 0.14;
+
+/** How well a resource matches a topic, on 0..1. */
+function relevanceTo(topic: CurationTopic, text: string): number {
+  const titleSim = similarity(topic.title, text);
+  const coverage = keywordCoverage(topic.keywords, text);
+  const summarySim = topic.summary ? similarity(topic.summary, text) * 0.5 : 0;
+  return Math.min(1, titleSim * 0.5 + coverage * 0.35 + summarySim * 0.15);
+}
+
+export async function curateResources(input: CurationInput): Promise<CurationResult> {
+  const videoBudget = input.videoSearchBudget ?? 8;
+  const webBudget = input.webSearchBudget ?? 6;
+  const gapBudget = input.gapSearchBudget ?? 8;
+
+  const pool: Sourced[] = [];
+  let videoSearches = 0;
+  let gapSearches = 0;
+
+  const bestRelevance = (text: string) =>
+    input.topics.reduce((max, t) => Math.max(max, relevanceTo(t, text)), 0);
+
+  // ---- Pass 1 · one search per unit --------------------------------------
+  const unitPlan = input.units
+    .slice(0, Math.max(1, videoBudget - 1))
+    .map((u) => ({ unitIdx: u.idx, query: u.queries[0] || `${input.subject} ${u.title}` }));
+
+  const playlistQuery =
+    input.prepType === 'exam'
+      ? `${input.subject} full syllabus lecture series`
+      : `${input.subject} complete course`;
+
+  const webQueries = [
+    input.prepType === 'exam'
+      ? `${input.subject} official syllabus exam pattern`
+      : `${input.subject} roadmap skills required`,
+    `${input.subject} best resources books documentation`,
+    ...input.units.slice(0, Math.max(0, webBudget - 2)).map((u) => `${u.title} ${input.subject} tutorial`),
+  ].slice(0, webBudget);
+
+  const [unitBatches, playlists, webBatches] = await Promise.all([
+    Promise.all(unitPlan.map((u) => searchVideos(u.query, 12))),
+    searchPlaylists(playlistQuery, 4),
+    Promise.all(webQueries.map((q) => searchWeb(q, { maxResults: 6 }))),
+  ]);
+
+  videoSearches = unitPlan.length + 1;
+
+  unitBatches.forEach((batch, i) => {
+    const unitIdx = unitPlan[i].unitIdx;
+    batch.forEach((v) =>
+      pool.push({ ...scoreYouTube(v, bestRelevance(`${v.title} ${v.description}`)), unitIdx }),
+    );
+  });
+  playlists.forEach((p) =>
+    pool.push({ ...scoreYouTube(p, bestRelevance(`${p.title} ${p.description}`)), unitIdx: null }),
+  );
+  webBatches.flat().forEach((w) =>
+    pool.push({ ...scoreWeb(w, bestRelevance(`${w.title} ${w.content}`)), unitIdx: null }),
+  );
+
+  // ---- Assignment --------------------------------------------------------
+  // A small reuse penalty spreads material across the plan instead of pinning
+  // one popular video to every topic — the exact failure mode of asking a model
+  // to "distribute the links".
+  const useCount = new Map<string, number>();
+
+  /**
+   * How many topics a resource clears the floor for.
+   *
+   * A syllabus PDF or "complete course" page matches every topic's keywords
+   * because it literally contains the syllabus. That makes it a plan-level
+   * document, not a lesson on any one topic — so breadth is a penalty here,
+   * and a resource matching almost everything is treated as not covering
+   * anything specifically.
+   */
+  const breadth = new Map<string, number>();
+  const specificityLimit = Math.max(2, Math.ceil(input.topics.length * 0.4));
+
+  const measureBreadth = (candidates: Sourced[]) => {
+    breadth.clear();
+    for (const resource of candidates) {
+      const text = `${resource.title} ${resource.description}`;
+      const hits = input.topics.filter((t) => relevanceTo(t, text) >= RELEVANCE_FLOOR).length;
+      breadth.set(resource.url, hits);
+    }
+  };
+  measureBreadth(pool);
+
+  const isSpecific = (url: string) => (breadth.get(url) ?? 1) <= specificityLimit;
+
+  const rankFor = (topic: CurationTopic, candidates: Sourced[]) =>
+    candidates
+      .map((r) => {
+        const relevance = relevanceTo(topic, `${r.title} ${r.description}`);
+        const reuse = useCount.get(r.url) ?? 0;
+        const breadthPenalty = Math.min(0.3, 0.05 * Math.max(0, (breadth.get(r.url) ?? 1) - 1));
+        return {
+          resource: r,
+          relevance,
+          value: relevance * 0.68 + r.score * 0.32 - reuse * 0.14 - breadthPenalty,
+        };
+      })
+      .filter((c) => c.relevance >= RELEVANCE_FLOOR)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, RESOURCES_PER_TOPIC);
+
+  const assignments = new Map<number, string[]>();
+  const commit = (topic: CurationTopic, picks: string[]) => {
+    picks.forEach((url) => useCount.set(url, (useCount.get(url) ?? 0) + 1));
+    assignments.set(topic.idx, picks);
+  };
+
+  // A topic counts as covered only if something *specific* to it was found;
+  // a generic match is provisional and still earns a targeted search.
+  const uncovered: CurationTopic[] = [];
+  for (const topic of input.topics) {
+    const ranked = rankFor(topic, pool);
+    if (ranked.length) commit(topic, ranked.map((r) => r.resource.url));
+    if (!ranked.some((r) => isSpecific(r.resource.url))) uncovered.push(topic);
+  }
+
+  // ---- Pass 2 · targeted searches for the gaps ---------------------------
+  // Only the topics the unit-level sweep missed. Highest-weight gaps first, so
+  // a quota ceiling costs the least important topics rather than a random tail.
+  if (uncovered.length) {
+    const targets = uncovered.slice(0, gapBudget);
+    logger.info({ gaps: uncovered.length, searching: targets.length }, 'curation.gap-pass');
+
+    const batches = await Promise.all(
+      targets.map((t) => searchVideos(`${t.title} ${input.subject}`, 8)),
+    );
+    gapSearches = targets.length;
+
+    batches.forEach((batch, i) => {
+      const unitIdx = targets[i].unitIdx;
+      batch.forEach((v) =>
+        pool.push({ ...scoreYouTube(v, relevanceTo(targets[i], `${v.title} ${v.description}`)), unitIdx }),
+      );
+    });
+
+    measureBreadth(pool);
+  }
+
+  // ---- Resolve whatever is still uncovered -------------------------------
+  let covered = input.topics.length - uncovered.length;
+  for (const topic of uncovered) {
+    // The provisional generic pick doesn't hold a reservation against the retry.
+    (assignments.get(topic.idx) ?? []).forEach((url) =>
+      useCount.set(url, Math.max(0, (useCount.get(url) ?? 1) - 1)),
+    );
+
+    const ranked = rankFor(topic, pool);
+    if (ranked.length) {
+      commit(topic, ranked.map((r) => r.resource.url));
+      if (ranked.some((r) => isSpecific(r.resource.url))) covered++;
+      continue;
+    }
+
+    // Still nothing on-topic. Fall back only to material from the SAME unit —
+    // adjacent context is defensible, a resource from another unit is not.
+    const sameUnit = pool
+      .filter((r) => r.unitIdx === topic.unitIdx)
+      .sort(
+        (a, b) =>
+          (useCount.get(a.url) ?? 0) - (useCount.get(b.url) ?? 0) || b.score - a.score,
+      )
+      .slice(0, 1);
+
+    commit(topic, sameUnit.map((r) => r.url));
+  }
+
+  const resources = dedupe(pool).filter((r) => r.score > 0.18);
+  const kept = new Set(resources.map((r) => r.url));
+
+  // Dedupe may have dropped a near-duplicate that an assignment pointed at.
+  assignments.forEach((urls, topicIdx) => {
+    const surviving = urls.filter((u) => kept.has(u));
+    if (surviving.length !== urls.length) assignments.set(topicIdx, surviving);
+  });
+
+  const assigned = [...assignments.values()].reduce((s, a) => s + a.length, 0);
+
+  logger.info(
+    { found: resources.length, assigned, covered, total: input.topics.length },
+    'curation.complete',
+  );
+
+  return {
+    resources,
+    assignments,
+    stats: {
+      videoSearches,
+      webSearches: webQueries.length,
+      gapSearches,
+      found: resources.length,
+      assigned,
+      covered,
+    },
+  };
+}

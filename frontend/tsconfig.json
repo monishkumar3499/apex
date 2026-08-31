@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "types": ["node", "vitest/globals"],
+    "plugins": [{ "name": "next" }],
+    // The sibling ../backend directory has no node_modules of its own, so its
+    // imports are pinned to the frontend's installed copies. Keep these in sync
+    // with the aliases in next.config.js.
+    "paths": {
+      "@/*": ["./*"],
+      "@supabase/supabase-js": ["./node_modules/@supabase/supabase-js"],
+      "@supabase/ssr": ["./node_modules/@supabase/ssr"],
+      "pino": ["./node_modules/pino"],
+      "zod": ["./node_modules/zod"],
+      "vitest": ["./node_modules/vitest"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../backend/**/*.ts"],
+  "exclude": ["node_modules"]
+}

@@ -23,7 +23,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Navigate to the app directory
-            cd ~/apex
+            cd ~/apex/apex
 
             # Fetch the latest changes from git
             git fetch origin ${{ github.ref_name }}

@@ -7,6 +7,8 @@ const PUBLIC_PREFIXES = ['/', '/login', '/auth', '/api/health'];
 const isPublic = (path: string) =>
   PUBLIC_PREFIXES.some((p) => (p === '/' ? path === '/' : path.startsWith(p)));
 
+const clean = (val?: string) => val?.replace(/^["']|["']$/g, '').trim();
+
 /**
  * Refreshes the Supabase session cookie on every request and gates the app
  * routes. Without this, server components see an expired token and every
@@ -15,11 +17,16 @@ const isPublic = (path: string) =>
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return response;
+  if (clean(process.env.NEXT_PUBLIC_DEMO_MODE) === 'true') return response;
+
+  const supabaseUrl = clean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+  if (!supabaseUrl || !supabaseAnonKey) return response;
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),

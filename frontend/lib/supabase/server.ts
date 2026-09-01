@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 
 type CookieWrite = { name: string; value: string; options?: CookieOptions };
 
+const clean = (val?: string) => val?.replace(/^["']|["']$/g, '').trim();
+
 /**
  * Server-side Supabase client bound to the request's auth cookies.
  * Use in server components and route handlers to identify the caller.
@@ -11,8 +13,8 @@ export async function supabaseServer() {
   const store = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    clean(process.env.NEXT_PUBLIC_SUPABASE_URL)!,
+    clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)!,
     {
       cookies: {
         getAll: () => store.getAll(),

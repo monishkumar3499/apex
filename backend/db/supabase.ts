@@ -7,13 +7,15 @@ import { logger } from '../logger/pino';
  * It bypasses RLS, so **every** query written against it must filter by
  * user_id explicitly. Never import this into client components.
  */
+const clean = (val?: string) => val?.replace(/^["']|["']$/g, '').trim();
+
 let cached: SupabaseClient | null = null;
 
 export function admin(): SupabaseClient {
   if (cached) return cached;
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = clean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const key = clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!url || !key) {
     logger.error('Supabase service credentials are missing (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');

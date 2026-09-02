@@ -102,12 +102,22 @@ export async function GET(request: Request) {
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_ROLE_KEY',
-    'OPENROUTER_API_KEY',
-    'GEMINI_API_KEY',
   ];
-  const optional = ['TAVILY_API_KEY', 'YOUTUBE_API_KEY'];
 
   const missing = required.filter((key) => !process.env[key]);
+
+  // At least one AI provider is required (OpenRouter or Gemini)
+  if (!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY) {
+    missing.push('OPENROUTER_API_KEY or GEMINI_API_KEY');
+  }
+
+  const optional = [
+    'TAVILY_API_KEY',
+    'YOUTUBE_API_KEY',
+    !process.env.GEMINI_API_KEY ? 'GEMINI_API_KEY' : '',
+    !process.env.OPENROUTER_API_KEY ? 'OPENROUTER_API_KEY' : '',
+  ].filter(Boolean);
+
   const degraded = optional.filter((key) => !process.env[key]);
 
   // Auth config is the one thing a runtime env check cannot fully verify:

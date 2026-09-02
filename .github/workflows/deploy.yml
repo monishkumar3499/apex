@@ -124,12 +124,16 @@ jobs:
 
             # Wait for the health endpoint before calling the deploy good.
             for attempt in $(seq 1 30); do
-              if curl -fsS http://127.0.0.1:3000/api/health > /dev/null 2>&1; then
+              status_code=$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:3000/api/health || echo "000")
+              if [ "$status_code" = "200" ]; then
                 echo "Health check passed on attempt $attempt."
                 break
               fi
               if [ "$attempt" -eq 30 ]; then
-                echo "Health check never passed. Recent container logs:"
+                echo "Health check never passed (last status: $status_code)."
+                echo "Health check response was:"
+                cat /tmp/health.json || true
+                echo "Recent container logs:"
                 docker logs --tail 60 apex || true
                 exit 1
               fi

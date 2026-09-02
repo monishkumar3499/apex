@@ -58,6 +58,9 @@ RUN if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KE
       exit 1; \
     fi
 
+# Allocate 2GB memory for Node during the build
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+
 RUN cd frontend && npm run build
 
 # ---------------------------------------------------------------------------

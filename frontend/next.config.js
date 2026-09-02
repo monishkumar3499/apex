@@ -12,6 +12,15 @@ const SHARED = ['@supabase/supabase-js', '@supabase/ssr', 'pino', 'zod'];
 const nextConfig = {
   reactStrictMode: true,
 
+  // CI gate already runs `npm run typecheck` in GitHub Actions.
+  // Skipping duplicate worker checks saves ~500MB memory during container build.
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'i.ytimg.com' },

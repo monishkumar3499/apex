@@ -128,7 +128,7 @@ export function TodayBoard({
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            <h1 className="font-display text-2xl font-semibold tracking-tight">
+            <h1 className="font-display text-fluid-h2 font-semibold">
               {isToday ? 'Today' : relativeDay(scheduledOn)}
             </h1>
             {!isToday && <Badge tone="muted">Rest day today</Badge>}
@@ -226,7 +226,7 @@ export function TodayBoard({
       </div>
 
       {allDone && (
-        <Card className="mt-7 border-success/25 bg-success/[0.06] p-6 text-center animate-in">
+        <Card className="mt-7 border-success/25 bg-success/[0.06] p-5 text-center animate-in sm:p-6">
           <PartyPopper className="mx-auto h-6 w-6 text-success" />
           <h3 className="mt-3 font-display text-lg font-semibold">Today is done</h3>
           <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-ink-muted">
@@ -270,13 +270,13 @@ function ItemRow({
           expanded && !isDone && 'border-accent/30',
         )}
       >
-        <div className="flex items-start gap-3 p-4">
+        <div className="flex items-start gap-3 p-3.5 sm:p-4">
           <button
             onClick={onToggle}
             disabled={busy}
             aria-label={isDone ? `Mark "${item.title}" as not done` : `Mark "${item.title}" as done`}
             className={cn(
-              'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border transition-all',
+              'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[7px] border transition-all sm:h-5 sm:w-5',
               isDone
                 ? 'border-success bg-success text-white'
                 : 'border-line-strong hover:border-accent hover:bg-accent/10',
@@ -315,14 +315,14 @@ function ItemRow({
           <button
             onClick={onExpand}
             aria-label={expanded ? 'Collapse' : 'Expand'}
-            className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-faint transition-colors hover:text-ink"
+            className="-m-2 flex h-touch w-touch shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors hover:text-ink"
           >
             <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
           </button>
         </div>
 
         {expanded && (
-          <div className="border-t border-line px-4 pb-4 pt-4 animate-in">
+          <div className="border-t border-line px-3.5 pb-4 pt-4 animate-in sm:px-4">
             {item.detail && (
               <p className="text-sm leading-relaxed text-ink-muted">{item.detail}</p>
             )}

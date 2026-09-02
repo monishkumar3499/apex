@@ -59,10 +59,10 @@ const PRINCIPLES = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       {/* ------------------------------------------------------------ nav */}
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-bg/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <header className="sticky top-0 z-40 border-b border-line/70 bg-bg/85 pt-safe backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-5">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-fg">
               <Compass className="h-4.5 w-4.5" strokeWidth={2.5} />
@@ -80,7 +80,7 @@ export default function LandingPage() {
             <ThemeToggle />
             <Link
               href="/app"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-4 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover"
+              className="inline-flex h-touch shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent px-3.5 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover sm:px-4"
             >
               Start free
               <ArrowRight className="h-3.5 w-3.5" />
@@ -91,27 +91,27 @@ export default function LandingPage() {
 
       <main>
         {/* --------------------------------------------------------- hero */}
-        <section className="relative overflow-hidden px-5 pb-24 pt-20 sm:pt-28">
+        <section className="relative overflow-hidden px-4 pb-16 pt-14 sm:px-5 sm:pb-24 sm:pt-28">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 h-[560px] bg-[radial-gradient(55%_75%_at_50%_0%,rgb(var(--accent)/0.11),transparent_72%)]"
           />
 
           <div className="relative mx-auto max-w-6xl">
-            <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
               <div className="animate-in">
                 <Badge tone="accent" className="mb-6">
                   <Sparkles className="h-3 w-3" />
                   AI prep engine
                 </Badge>
 
-                <h1 className="font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.4rem]">
+                <h1 className="font-display text-fluid-hero font-semibold">
                   Stop collecting resources.
                   <br />
                   <span className="text-accent">Start following a plan.</span>
                 </h1>
 
-                <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-muted">
+                <p className="mt-6 max-w-lg text-base leading-relaxed text-ink-muted sm:text-lg">
                   Tell APEX what you are preparing for and by when. It finds the best
                   material that actually exists, then maps every day between now and your
                   deadline around the hours you really have.
@@ -120,14 +120,14 @@ export default function LandingPage() {
                 <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                   <Link
                     href="/app/new"
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-accent px-7 font-medium text-accent-fg shadow-sm transition-all hover:bg-accent-hover hover:shadow"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-accent px-6 font-medium text-accent-fg shadow-sm transition-all hover:bg-accent-hover hover:shadow sm:px-7"
                   >
                     Build my prep map
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <a
                     href="#how"
-                    className="inline-flex h-12 items-center justify-center rounded-xl border border-line-strong px-7 font-medium transition-colors hover:bg-surface-2"
+                    className="inline-flex h-12 items-center justify-center rounded-xl border border-line-strong px-6 font-medium transition-colors hover:bg-surface-2 sm:px-7"
                   >
                     See how it works
                   </a>
@@ -149,7 +149,7 @@ export default function LandingPage() {
         </section>
 
         {/* ----------------------------------------------------- how it works */}
-        <section id="how" className="border-y border-line bg-surface-2/40 px-5 py-24">
+        <section id="how" className="border-y border-line bg-surface-2/40 px-4 py-16 sm:px-5 sm:py-24">
           <div className="mx-auto max-w-6xl">
             <SectionHead
               eyebrow="How it works"
@@ -186,7 +186,7 @@ export default function LandingPage() {
         </section>
 
         {/* -------------------------------------------------------- surfaces */}
-        <section id="surfaces" className="px-5 py-24">
+        <section id="surfaces" className="px-4 py-16 sm:px-5 sm:py-24">
           <div className="mx-auto max-w-6xl">
             <SectionHead
               eyebrow="The app"
@@ -223,7 +223,7 @@ export default function LandingPage() {
         </section>
 
         {/* ------------------------------------------------------------- why */}
-        <section id="why" className="border-y border-line bg-surface-2/40 px-5 py-24">
+        <section id="why" className="border-y border-line bg-surface-2/40 px-4 py-16 sm:px-5 sm:py-24">
           <div className="mx-auto max-w-6xl">
             <SectionHead
               eyebrow="Why it holds up"
@@ -250,7 +250,7 @@ export default function LandingPage() {
         {/* ------------------------------------------------------------- cta */}
         <section className="px-5 py-28">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h2 className="font-display text-fluid-h2 font-semibold">
               What are you preparing for?
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-ink-muted">
@@ -286,7 +286,7 @@ function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; 
   return (
     <div className="max-w-2xl">
       <span className="text-2xs font-semibold uppercase tracking-widest text-accent">{eyebrow}</span>
-      <h2 className="mt-3 font-display text-3xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="mt-3 font-display text-fluid-h2 font-semibold">{title}</h2>
       <p className="mt-3.5 text-base leading-relaxed text-ink-muted">{sub}</p>
     </div>
   );

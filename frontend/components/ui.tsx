@@ -23,9 +23,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-xs gap-1.5 rounded-lg',
-  md: 'h-10 px-4 text-sm gap-2 rounded-xl',
-  lg: 'h-12 px-6 text-base gap-2 rounded-xl',
+  sm: 'h-9 px-3 text-xs gap-1.5 rounded-lg sm:h-8',
+  md: 'h-11 px-4 text-sm gap-2 rounded-xl sm:h-10',
+  lg: 'h-12 px-5 text-base gap-2 rounded-xl sm:px-6',
 };
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -42,6 +42,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       className={cn(
         'inline-flex items-center justify-center font-medium transition-all duration-150',
         'disabled:opacity-45 disabled:pointer-events-none select-none',
+        // touch-manipulation removes the ~300ms delay mobile browsers add while
+        // they wait to see whether a tap is the start of a double-tap zoom.
+        'touch-manipulation active:scale-[0.98]',
         VARIANTS[variant],
         SIZES[size],
         className,
@@ -206,7 +209,10 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    // `items-end` on mobile: a dialog anchored to the bottom of the screen is
+    // reachable with a thumb, and it does not fight the on-screen keyboard.
+    // It centres again as soon as there is room.
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in"
         onClick={onClose}
@@ -216,12 +222,23 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="surface-raised relative w-full max-w-md rounded-panel p-6 animate-scale-in"
+        className={cn(
+          'surface-raised relative w-full animate-slide-up',
+          // Rounded only at the top on mobile, where it meets the screen edge.
+          'rounded-t-panel px-5 pb-safe pt-6 sm:max-w-md sm:rounded-panel sm:p-6',
+          // A long description must scroll inside the dialog, not push its
+          // buttons off the bottom of a short viewport.
+          'max-h-[85dvh] overflow-y-auto no-chain sm:animate-scale-in',
+        )}
       >
         <h2 className="font-display text-lg font-semibold">{title}</h2>
         {description && <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{description}</p>}
         {children && <div className="mt-4">{children}</div>}
-        {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
+        {footer && (
+          <div className="mt-6 flex flex-col-reverse gap-2 pb-5 [&>*]:w-full sm:flex-row sm:justify-end sm:pb-0 sm:[&>*]:w-auto">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

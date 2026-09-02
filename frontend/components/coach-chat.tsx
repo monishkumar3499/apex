@@ -119,8 +119,11 @@ export function CoachChat({
   const stop = () => abortRef.current?.abort();
   const visible = messages.filter((m) => m.role !== 'system');
 
+  // dvh, not vh: on mobile Safari 100vh includes the address bar, so the
+  // composer started life below the fold. The subtraction also has to clear the
+  // mobile tab bar, which vh knows nothing about.
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-5rem)]">
+    <div className="flex h-[calc(100dvh-13rem)] flex-col sm:h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-6rem)]">
       <div className="flex-1 overflow-y-auto pb-4">
         <div className="space-y-6">
           {visible.map((message) => (
@@ -151,12 +154,12 @@ export function CoachChat({
       {/* ------------------------------------------------------ composer */}
       <div className="shrink-0 pt-3">
         {visible.length <= 1 && !streaming && (
-          <div className="mb-3 flex flex-wrap gap-1.5">
+          <div className="scroll-x mb-3 -mx-1 flex gap-1.5 px-1 pb-1 sm:flex-wrap sm:overflow-visible">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion}
                 onClick={() => send(suggestion)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink"
+                className="inline-flex min-h-touch shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink sm:whitespace-normal"
               >
                 <Sparkles className="h-3 w-3" />
                 {suggestion}
@@ -178,14 +181,14 @@ export function CoachChat({
               }
             }}
             placeholder="Ask about a concept, a problem you're stuck on, or your pace…"
-            className="max-h-48 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm outline-none placeholder:text-ink-faint"
+            className="max-h-48 min-w-0 flex-1 resize-none bg-transparent px-2.5 py-2 text-base outline-none placeholder:text-ink-faint sm:text-sm"
           />
 
           {streaming ? (
             <button
               onClick={stop}
               aria-label="Stop generating"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-3 text-ink-muted transition-colors hover:text-ink"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-3 text-ink-muted transition-colors hover:text-ink"
             >
               <Square className="h-3.5 w-3.5" fill="currentColor" />
             </button>
@@ -194,7 +197,7 @@ export function CoachChat({
               onClick={() => send(input)}
               disabled={!input.trim()}
               aria-label="Send"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-fg transition-all hover:bg-accent-hover disabled:opacity-35"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-fg transition-all hover:bg-accent-hover disabled:opacity-35"
             >
               <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
             </button>
@@ -216,6 +219,28 @@ function Avatar() {
     </div>
   );
 }
+
+/**
+ * Markdown element overrides.
+ *
+ * A CSS-only fix cannot contain a wide table: `overflow-x` on the table itself
+ * needs `display: block`, which discards the table layout. The scroll has to
+ * live on a wrapper, so the wrapper is added here — otherwise a four-column
+ * comparison table from the coach makes the whole phone page pan sideways.
+ */
+const MARKDOWN_COMPONENTS = {
+  table: ({ children, ...props }: React.ComponentPropsWithoutRef<'table'>) => (
+    <div className="scroll-x my-3 -mx-1 px-1">
+      <table {...props}>{children}</table>
+    </div>
+  ),
+  // The coach is not the app; its links open away from it.
+  a: ({ children, ...props }: React.ComponentPropsWithoutRef<'a'>) => (
+    <a {...props} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  ),
+};
 
 function Bubble({
   role,
@@ -249,7 +274,7 @@ function Bubble({
           '[&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:font-display [&_h2]:text-base [&_h2]:font-semibold',
           '[&_h3]:mb-1.5 [&_h3]:mt-3.5 [&_h3]:font-semibold',
           '[&_strong]:font-semibold [&_strong]:text-ink',
-          '[&_code]:rounded [&_code]:bg-surface-3 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.85em]',
+          '[&_code]:rounded [&_code]:bg-surface-3 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.85em] [&_code]:break-words',
           '[&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-line [&_pre]:bg-surface-2 [&_pre]:p-3.5',
           '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
           '[&_blockquote]:border-l-2 [&_blockquote]:border-accent/40 [&_blockquote]:pl-3 [&_blockquote]:text-ink-muted',
@@ -259,7 +284,9 @@ function Bubble({
           '[&_td]:border [&_td]:border-line [&_td]:px-2 [&_td]:py-1.5',
         )}
       >
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+          {content}
+        </ReactMarkdown>
         {streaming && (
           <span className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 animate-pulse bg-accent" />
         )}

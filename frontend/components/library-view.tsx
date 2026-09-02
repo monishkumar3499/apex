@@ -61,7 +61,7 @@ export function LibraryView({ resources }: { resources: LibraryResource[] }) {
 
   return (
     <div className="animate-in">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">Library</h1>
+      <h1 className="font-display text-fluid-h2 font-semibold">Library</h1>
       <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
         <span>{resources.length} resources across your plan.</span>
         <span className="inline-flex items-center gap-1 text-xs text-success">
@@ -72,13 +72,13 @@ export function LibraryView({ resources }: { resources: LibraryResource[] }) {
 
       {/* --------------------------------------------------------- controls */}
       <div className="mt-7 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[200px] flex-1">
+        <div className="relative w-full min-w-0 flex-1 sm:min-w-[15rem]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search titles, channels, topics…"
-            className="h-10 w-full rounded-xl border border-line bg-surface-2 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-ink-faint focus:border-accent/50"
+            className="h-11 w-full rounded-xl border border-line bg-surface-2 pl-9 pr-3 text-base outline-none transition-colors placeholder:text-ink-faint focus:border-accent/50 sm:h-10 sm:text-sm"
           />
         </div>
       </div>
@@ -92,7 +92,7 @@ export function LibraryView({ resources }: { resources: LibraryResource[] }) {
               key={option.value}
               onClick={() => setFilter(option.value)}
               className={cn(
-                'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                'min-h-touch rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
                 filter === option.value
                   ? 'border-accent bg-accent/12 text-accent'
                   : 'border-line text-ink-muted hover:text-ink',

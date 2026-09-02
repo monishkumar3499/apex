@@ -19,14 +19,17 @@ things it is uniquely good at, and computes everything else.
 | Stage | Who does it | Why |
 |---|---|---|
 | Classify the goal | model (~400 tok) | Judgement: is "AWS SAA" an exam or a role? |
-| Design units & topics | model (~2,300 tok) | Judgement: what does this subject contain? |
+| Design units & topics | model, **sharded** | Judgement: what does this subject contain? |
 | Find & rank resources | **code** | APIs know view counts and durations; models invent URLs |
 | Build the schedule | **code** | Fitting work into capacity is arithmetic, not prose |
 | Write the plan digest | **code** | It is a projection of data we already hold |
 | Generate drill questions | model, **lazily** | Pay per topic actually studied, not per topic planned |
 
-A 26-week plan costs **about 2.7k tokens to build** and contains a real
-day-by-day schedule with verified resources attached.
+Measured on a 26-week GATE plan: **80 topics across 12 units in 26 seconds**,
+for about 15k tokens, with a real day-by-day schedule and verified resources
+attached. The structure is generated as an outline plus three concurrent topic
+calls — one combined call for the same content took 33 seconds, because output
+tokens are emitted serially.
 
 ---
 
@@ -73,9 +76,21 @@ It creates the schema, row-level security on every user-owned table, a trigger
 that provisions a profile for each new auth user, and denormalised plan counters.
 
 Then enable the sign-in methods you want under **Authentication → Providers**
-(email magic-link works out of the box; Google needs OAuth credentials). Add
-your callback URL — `http://localhost:3000/auth/callback` locally — under
-**Authentication → URL Configuration**.
+(email magic-link works out of the box; Google needs OAuth credentials).
+
+Under **Authentication → URL Configuration**, set:
+
+- **Site URL** — your public origin, e.g. `http://localhost:3000`
+- **Redirect URLs** — add `<origin>/auth/callback` for every origin you serve
+  from. Locally that is `http://localhost:3000/auth/callback`.
+
+Then set `APP_ORIGIN` in `frontend/.env` to that same origin. Behind a reverse
+proxy the app cannot derive its own public URL — it sees a plain-HTTP request on
+an internal host — and OAuth redirects will either land on the wrong host or
+downgrade HTTPS to HTTP, which silently drops the auth cookie.
+
+`GET /api/health` prints the callback URL it will actually generate. If it does
+not match what Supabase has, sign-in will not complete.
 
 If you are running with `NEXT_PUBLIC_DEMO_MODE=true`, also run
 [`database/seed-demo-user.sql`](database/seed-demo-user.sql). Demo mode bypasses
@@ -102,13 +117,33 @@ npm run dev          # http://localhost:3000
 ### Checks
 
 ```bash
-npm test             # scheduler + spaced-repetition unit tests
+npm test             # 109 unit tests: scheduler, SM-2, model routing,
+                     # auth redirect rules, blueprint sharding, prompts
 npm run typecheck
 npm run build
 
-# Opt-in: hits the real OpenRouter / YouTube / Tavily endpoints
+# Opt-in: hits the real Gemini / OpenRouter / YouTube / Tavily endpoints and
+# prints measured latency, coverage and the token ledger for a full build.
 RUN_INTEGRATION=1 npm test
 ```
+
+### 4. Docker
+
+```bash
+# The NEXT_PUBLIC_* values are compiled into the browser bundle, so they must be
+# present at BUILD time. The build fails loudly if they are missing, because the
+# alternative is an image whose sign-in silently does nothing.
+docker build \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co" \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key" \
+  -t apex-app .
+
+docker run -d --name apex -p 3000:3000 --env-file frontend/.env apex-app
+```
+
+The GitHub Actions workflow does this automatically, reading the two values from
+repository secrets (falling back to `frontend/.env` on the host), and waits for
+`/api/health` to pass before calling the deploy good.
 
 ---
 
@@ -117,18 +152,20 @@ RUN_INTEGRATION=1 npm test
 ```text
 APEX/
 ├── backend/                     # Plain TypeScript, imported by the Next server
-│   ├── ai/                      # OpenRouter client, model tiers, JSON repair
+│   ├── ai/                      # Gemini + OpenRouter clients, fallback chains,
+│   │                            #   rate gate, circuit breaker, JSON repair
 │   ├── curation/                # Resource scoring, dedupe, topic matching
 │   ├── planner/                 # Calendar, scheduler, SM-2 — the core IP
-│   ├── prompts/                 # The four prompts, kept small on purpose
-│   ├── services/                # Build pipeline, coach, drill, progress
+│   ├── prompts/                 # The prompts, kept small on purpose
+│   ├── services/                # Build pipeline, sharded blueprint generation,
+│   │                            #   coach, drill, progress
 │   └── tools/                   # YouTube, Tavily
 ├── database/schema.sql
 ├── docs/architecture.md
 └── frontend/                    # Next.js 15 App Router
     ├── app/                     # Routes + API handlers
-    ├── components/              # UI
-    └── lib/                     # Supabase clients, API helpers
+    ├── components/              # UI (incl. the build-wait insight stream)
+    └── lib/                     # Supabase clients, auth URL rules, API helpers
 ```
 
 `backend/` has no `node_modules` of its own — its imports are pinned to the
@@ -147,7 +184,20 @@ two lists in sync.
   short function timeout, move `buildPlan` to a queue or a background worker.
 - **YouTube quota is the real ceiling on resource quality.** 10,000 units/day,
   100 per search. Curation searches once per unit, then only re-searches the
-  topics that sweep left uncovered.
-- **Blueprint structures are cached across users** by subject, type, level and a
-  rounded study-hour bucket, so the second learner preparing for the same exam
-  pays no generation cost at all.
+  topics that sweep left uncovered. Budgets scale with plan size — roughly
+  1,500–2,500 units for the largest plans.
+- **Blueprint structures are cached across users** by subject, type, level, a
+  rounded study-hour bucket, and `BLUEPRINT_VERSION`. Bump that constant
+  whenever the prompt changes, or returning learners keep getting the structure
+  the *previous* prompt produced.
+- **Every model tier has a cross-provider fallback chain.** Set
+  `STRUCTURED_MODEL` to a comma-separated list to reorder it; a single value is
+  promoted to the head of the built-in chain rather than replacing it, so
+  overriding the primary model never silently discards its fallbacks. Verify any
+  slug with `GET /api/health?models=1` — providers retire them without notice.
+- **The free Gemini tier is about 10 requests/minute,** and one build spends four
+  on the blueprint (an outline plus three concurrent shards). `ProviderGate` paces
+  requests and `ModelBreaker` sidelines a 429'd model rather than retrying it, so
+  concurrent builds degrade to a fallback model instead of failing.
+- **Demo mode hides auth bugs.** With `NEXT_PUBLIC_DEMO_MODE=true` the OAuth path
+  is never exercised, so sign-in can be completely broken and look fine.

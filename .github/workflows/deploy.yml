@@ -5,11 +5,58 @@ on:
     branches:
       - master
       - main
+  pull_request:
+    branches:
+      - master
+      - main
 
 jobs:
+  # -------------------------------------------------------------------------
+  # Gate: nothing reaches EC2 that does not typecheck and pass its tests.
+  # -------------------------------------------------------------------------
+  verify:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: frontend
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: frontend
+        # Integration tests hit real upstreams and are opt-in (RUN_INTEGRATION=1).
+        run: npm test
+
+      - name: Production build
+        working-directory: frontend
+        env:
+          # Placeholders only. The build must not depend on real credentials —
+          # this step exists to catch compile errors, not to produce an artifact.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build
+
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -17,33 +64,78 @@ jobs:
 
       - name: Deploy on EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          # NEXT_PUBLIC_* are compiled into the browser bundle, so they have to
+          # be present at `docker build` time. Passing them only through
+          # --env-file at run time ships a bundle with `undefined` credentials
+          # and sign-in fails with no server-side error to find.
+          #
+          # Both values are public by design (the anon key is protected by RLS),
+          # but they live in secrets so the Supabase project is not pinned into
+          # the workflow file.
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: SUPABASE_URL,SUPABASE_ANON_KEY
           script: |
-            # Navigate to the app directory
+            set -euo pipefail
+
             cd ~/apex/apex
 
-            # Fetch the latest changes from git
             git fetch origin ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
 
-            # Rebuild the Docker image
-            docker build -t apex-app .
+            # Fall back to the values already in frontend/.env on the host, so a
+            # deploy still works before the repository secrets are populated.
+            if [ -z "${SUPABASE_URL:-}" ] && [ -f frontend/.env ]; then
+              SUPABASE_URL="$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' frontend/.env | head -1 | cut -d= -f2- | tr -d '\042\047' )"
+            fi
+            if [ -z "${SUPABASE_ANON_KEY:-}" ] && [ -f frontend/.env ]; then
+              SUPABASE_ANON_KEY="$(grep -E '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' frontend/.env | head -1 | cut -d= -f2- | tr -d '\042\047' )"
+            fi
 
-            # Stop and remove the existing container if running
+            if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+              echo "Refusing to build: the public Supabase credentials are unavailable."
+              echo "Set NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY as repository"
+              echo "secrets, or make sure frontend/.env on the host defines them."
+              exit 1
+            fi
+
+            docker build \
+              --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
+              --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+              --build-arg NEXT_PUBLIC_DEMO_MODE=false \
+              -t apex-app:new .
+
+            # Only retire the running container once the new image exists, so a
+            # failed build leaves the previous version serving.
             docker stop apex || true
             docker rm apex || true
+            docker tag apex-app:new apex-app:latest
 
-            # Run the new container with production settings
             docker run -d --name apex \
               -p 3000:3000 \
               --restart always \
               --env-file frontend/.env \
-              apex-app
+              apex-app:latest
 
-            # Clean up old unused docker images to save disk space
+            # Wait for the health endpoint before calling the deploy good.
+            for attempt in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:3000/api/health > /dev/null 2>&1; then
+                echo "Health check passed on attempt $attempt."
+                break
+              fi
+              if [ "$attempt" -eq 30 ]; then
+                echo "Health check never passed. Recent container logs:"
+                docker logs --tail 60 apex || true
+                exit 1
+              fi
+              sleep 2
+            done
+
             docker image prune -f
 
             echo "Deployment completed successfully!"

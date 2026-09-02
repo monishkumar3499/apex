@@ -70,13 +70,13 @@ export function PlanMap({
 
   return (
     <div className="animate-in">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">The map</h1>
+      <h1 className="font-display text-fluid-h2 font-semibold">The map</h1>
       <p className="mt-1.5 text-sm text-ink-muted">
         Everything between now and your target, in the order it should be learned.
       </p>
 
       {/* ---------------------------------------------------------- stats */}
-      <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-7 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         <Stat label="Units" value={String(units.length)} />
         <Stat label="Topics" value={String(scheduled.length)} />
         <Stat label="Study time" value={formatMinutes(totalMinutes)} />
@@ -103,7 +103,7 @@ export function PlanMap({
             <Card key={unit.id} className={cn('overflow-hidden', expanded && 'border-accent/25')}>
               <button
                 onClick={() => setOpen(expanded ? null : unit.id)}
-                className="flex w-full items-center gap-4 p-5 text-left"
+                className="flex w-full items-center gap-3 p-4 text-left sm:gap-4 sm:p-5"
                 aria-expanded={expanded}
               >
                 <span
@@ -211,8 +211,8 @@ export function PlanMap({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="p-4">
-      <p className="tabular font-display text-xl font-semibold">{value}</p>
+    <Card className="p-3 sm:p-4">
+      <p className="tabular font-display text-lg font-semibold sm:text-xl">{value}</p>
       <p className="mt-0.5 text-2xs uppercase tracking-wider text-ink-faint">{label}</p>
     </Card>
   );
@@ -224,7 +224,7 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
 
   return (
     <li className="border-b border-line last:border-0">
-      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-2">
+      <button onClick={() => setOpen((v) => !v)} className="flex min-h-touch w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2 sm:px-5">
         {complete ? (
           <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
         ) : (
@@ -250,7 +250,7 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
       </button>
 
       {open && (
-        <div className="border-t border-line bg-surface-2/50 px-5 py-4 animate-in">
+        <div className="border-t border-line bg-surface-2/50 px-4 py-4 animate-in sm:px-5">
           {topic.summary && <p className="text-sm leading-relaxed text-ink-muted">{topic.summary}</p>}
 
           {topic.outcomes.length > 0 && (

@@ -67,7 +67,7 @@ export function PlanCard({
   return (
     <>
       <Card className="group relative overflow-hidden transition-all duration-200 hover:border-accent/30 hover:shadow-sm">
-        <Link href={href} className="block p-5">
+        <Link href={href} className="block p-4 pr-14 sm:p-5 sm:pr-14">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -123,7 +123,14 @@ export function PlanCard({
           <button
             aria-label="Plan options"
             onClick={(e) => { e.preventDefault(); setMenuOpen((v) => !v); }}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-ink-faint opacity-0 transition-all hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+            /*
+              Reveal-on-hover is fine with a mouse and makes the control
+              unreachable without one: a touch device never fires hover, so
+              on a phone the plan menu simply did not exist. It is now always
+              visible, and only *hidden* until hover where a fine pointer is
+              actually available.
+            */
+            className="flex h-touch w-touch items-center justify-center rounded-lg text-ink-faint transition-all hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 pointer:opacity-0 pointer:group-hover:opacity-100"
           >
             <MoreHorizontal className="h-4 w-4" />
           </button>
@@ -131,10 +138,10 @@ export function PlanCard({
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="surface-raised absolute right-0 top-8 z-20 w-40 overflow-hidden rounded-lg animate-scale-in">
+              <div className="surface-raised absolute right-0 top-11 z-20 w-[min(10rem,calc(100vw-3rem))] overflow-hidden rounded-lg animate-scale-in">
                 <button
                   onClick={() => { setMenuOpen(false); setConfirming(true); }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger transition-colors hover:bg-danger/10"
+                  className="flex min-h-touch w-full items-center gap-2 px-3 py-2.5 text-sm text-danger transition-colors hover:bg-danger/10"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete plan

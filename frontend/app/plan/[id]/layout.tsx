@@ -54,7 +54,14 @@ export default async function PlanLayout({ children, params }: Props) {
       />
 
       <div className="min-w-0 flex-1 lg:pl-sidebar">
-        <main className="mx-auto max-w-4xl px-5 py-8 pb-24 lg:px-8 lg:py-10">{children}</main>
+        {/*
+          `pb-tabsafe` clears the fixed mobile tab bar *and* the iOS home
+          indicator, so the last item in a list is never half-covered. On
+          desktop there is no bar, so the padding drops back to normal.
+        */}
+        <main className="mx-auto w-full max-w-4xl px-4 py-6 pb-tabsafe sm:px-5 sm:py-8 lg:px-8 lg:py-10 lg:pb-16">
+          {children}
+        </main>
       </div>
     </div>
   );

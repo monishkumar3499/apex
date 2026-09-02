@@ -9,6 +9,7 @@ import {
   GraduationCap, Briefcase, Layers, Check,
 } from 'lucide-react';
 import { Button, Card, Badge } from '../../../components/ui';
+import { InsightStream } from '../../../components/insight-stream';
 import { cn, formatMinutes } from '../../../lib/utils';
 
 /* ------------------------------------------------------------------ types */
@@ -160,7 +161,7 @@ export default function NewPlanPage() {
   /* ------------------------------------------------------------ render */
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="mx-auto w-full max-w-xl px-4 sm:px-0">
       <Link
         href="/app"
         className="mb-8 inline-flex items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
@@ -196,7 +197,7 @@ export default function NewPlanPage() {
                   <button
                     key={example}
                     onClick={() => setGoal(example)}
-                    className="rounded-lg border border-line bg-surface-2 px-3 py-1.5 text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink"
+                    className="min-h-touch rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs text-ink-muted transition-colors hover:border-accent/40 hover:text-ink"
                   >
                     {example}
                   </button>
@@ -255,7 +256,7 @@ export default function NewPlanPage() {
                     key={preset.label}
                     onClick={() => setTargetDate(addMonths(preset.months))}
                     className={cn(
-                      'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
+                      'min-h-touch rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
                       targetDate === addMonths(preset.months)
                         ? 'border-accent bg-accent/12 text-accent'
                         : 'border-line bg-surface-2 text-ink-muted hover:text-ink',
@@ -273,7 +274,7 @@ export default function NewPlanPage() {
                   value={targetDate}
                   min={startDate}
                   onChange={(e) => setTargetDate(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-line bg-surface-2 pl-10 pr-3 text-sm outline-none focus:border-accent/50"
+                  className="h-12 w-full rounded-xl border border-line bg-surface-2 pl-10 pr-3 text-base outline-none focus:border-accent/50 sm:text-sm"
                 />
               </div>
             </Field>
@@ -283,7 +284,7 @@ export default function NewPlanPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="h-12 w-full rounded-xl border border-line bg-surface-2 px-3 text-sm outline-none focus:border-accent/50"
+                className="h-12 w-full rounded-xl border border-line bg-surface-2 px-3 text-base outline-none focus:border-accent/50 sm:text-sm"
               />
             </Field>
 
@@ -309,7 +310,7 @@ export default function NewPlanPage() {
             />
 
             <Field label="Days off (optional)">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1 xs:gap-1.5">
                 {DAY_LABELS.map((label, index) => {
                   const off = restDays.includes(index);
                   return (
@@ -322,7 +323,7 @@ export default function NewPlanPage() {
                       }
                       aria-pressed={off}
                       className={cn(
-                        'h-10 flex-1 rounded-lg border text-sm font-medium transition-colors',
+                        'h-touch min-w-0 flex-1 rounded-lg border text-sm font-medium transition-colors',
                         off
                           ? 'border-line bg-surface-3 text-ink-faint line-through'
                           : 'border-accent/30 bg-accent/10 text-accent',
@@ -357,8 +358,33 @@ export default function NewPlanPage() {
         )}
       </div>
 
+      {/*
+        The two model-backed steps are the only ones with a real wait. Reading
+        material during them turns a few dead seconds into something useful,
+        and the same component covers the much longer wait on the build screen.
+      */}
+      {(classifying || submitting) && (
+        <InsightStream
+          compact
+          className="mt-6"
+          categories={['learning', 'focus']}
+          intervalMs={5_000}
+        />
+      )}
+
       {/* ---------------------------------------------------------- nav */}
-      <div className="mt-8 flex items-center justify-between">
+      {/*
+        Sticky on mobile: the capacity step is tall enough to push "Build my
+        prep map" below the fold on a phone, and a primary action a learner
+        has to hunt for reads as a dead end.
+      */}
+      <div
+        className={cn(
+          'mt-8 flex items-center justify-between gap-3',
+          'sticky bottom-0 -mx-4 border-t border-line bg-bg/95 px-4 py-3 pb-safe backdrop-blur-xl',
+          'sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none',
+        )}
+      >
         <Button
           variant="ghost"
           onClick={() => setStep((s) => Math.max(0, s - 1))}
@@ -370,8 +396,8 @@ export default function NewPlanPage() {
 
         {step === 0 ? (
           <Button onClick={classify} loading={classifying} disabled={!canAdvance} size="lg">
-            Continue
-            <ArrowRight className="h-4 w-4" />
+            {classifying ? 'Reading your goal…' : 'Continue'}
+            {!classifying && <ArrowRight className="h-4 w-4" />}
           </Button>
         ) : step < 3 ? (
           <Button onClick={() => setStep((s) => s + 1)} disabled={!canAdvance} size="lg">
@@ -517,7 +543,7 @@ function Stepper({
           step={15}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-surface-3 accent-accent"
+          className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-surface-3 accent-accent [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent"
         />
         <span className="tabular w-20 shrink-0 text-right text-sm font-medium">
           {value === 0 ? 'None' : formatMinutes(value)}
@@ -529,7 +555,7 @@ function Stepper({
             key={preset}
             onClick={() => onChange(preset)}
             className={cn(
-              'rounded-md border px-2 py-1 text-2xs font-medium transition-colors',
+              'min-h-touch rounded-md border px-2.5 py-1 text-2xs font-medium transition-colors',
               value === preset
                 ? 'border-accent bg-accent/12 text-accent'
                 : 'border-line text-ink-faint hover:text-ink',

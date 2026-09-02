@@ -54,20 +54,20 @@ export function ProgressView({
 
   return (
     <div className="animate-in">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">Progress</h1>
+      <h1 className="font-display text-fluid-h2 font-semibold">Progress</h1>
       <p className="mt-1.5 text-sm text-ink-muted">
         Measured from what you actually completed, not from what the plan hoped for.
       </p>
 
       {/* ---------------------------------------------------------- pace */}
-      <Card className="mt-7 p-6">
+      <Card className="mt-7 p-4 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <Badge tone={status.tone}>
               <StatusIcon className="h-3 w-3" />
               {status.label}
             </Badge>
-            <p className="mt-3 font-display text-3xl font-semibold">
+            <p className="mt-3 font-display text-2xl font-semibold sm:text-3xl">
               {data.donePct}<span className="text-lg text-ink-faint">%</span>
             </p>
             <p className="mt-1 text-xs text-ink-muted">
@@ -76,7 +76,7 @@ export function ProgressView({
           </div>
 
           <div className="text-right">
-            <p className="font-display text-3xl font-semibold">{data.daysLeft}</p>
+            <p className="font-display text-2xl font-semibold sm:text-3xl">{data.daysLeft}</p>
             <p className="mt-1 text-xs text-ink-muted">
               days left · target {formatDate(targetDate, { year: 'numeric' })}
             </p>

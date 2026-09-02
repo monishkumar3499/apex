@@ -62,6 +62,14 @@ export interface SchedResult {
   sessions: SchedSession[];
   deferredTopics: number[];
   mockDays: number[];
+  /**
+   * Days reserved for consolidation, which must never carry new material.
+   *
+   * Reported explicitly because "has a buffer item" is only a proxy for it —
+   * day one also gets a buffer item (the orientation win) and does teach new
+   * material, so the invariant needs the real list to be testable.
+   */
+  catchUpDays: number[];
   stats: {
     studyDays: number;
     totalMinutes: number;
@@ -82,8 +90,35 @@ const PRACTICE_RATIO: Record<SchedInput['prepType'], number> = {
 const REVIEW_OFFSETS = [2, 7, 21];   // expanding-interval consolidation
 const REVIEW_MINUTES = 15;
 const MIN_CHUNK = 25;                // shorter than this and nothing sticks
-const MAX_CHUNK = 90;                // longer than this and attention collapses
+const MAX_CHUNK = 90;                // absolute ceiling on one block
 const ASSESS_MINUTES = 35;
+
+/**
+ * How long a single block of new material may run, by difficulty.
+ *
+ * A flat 90-minute ceiling treats "list the SI units" and "derive the
+ * small-signal model" as the same kind of work. They are not: the harder the
+ * material, the sooner attention degrades and the more the learner needs a
+ * boundary to stop at. Hard topics therefore arrive as more, shorter blocks
+ * with the same total time — same coverage, far higher completion rate.
+ */
+function maxChunkFor(difficulty: number): number {
+  if (difficulty >= 5) return 40;
+  if (difficulty >= 4) return 50;
+  if (difficulty >= 3) return 65;
+  return MAX_CHUNK;
+}
+
+/**
+ * Distinct new topics a learner may be introduced to in one day.
+ *
+ * Interleaving helps retention, but only up to a point: a free Saturday with
+ * 240 minutes of capacity would otherwise open five unrelated concepts in a
+ * row, and nothing consolidates. Beyond the cap the day is filled with
+ * practice and review of what is already open instead — which is the more
+ * valuable use of the time anyway.
+ */
+const MAX_NEW_TOPICS_PER_DAY = 3;
 
 /** Kahn topological sort; falls back to declared order on a cycle. */
 function orderTopics(topics: SchedTopic[]): SchedTopic[] {
@@ -187,6 +222,7 @@ export function buildSchedule(input: SchedInput): SchedResult {
       sessions: [],
       deferredTopics: input.topics.map((t) => t.idx),
       mockDays: [],
+      catchUpDays: [],
       stats: { studyDays: 0, totalMinutes: 0, capacityMinutes: 0, utilisation: 0, compression: 1, itemCount: 0 },
     };
   }
@@ -260,6 +296,28 @@ export function buildSchedule(input: SchedInput): SchedResult {
     });
   };
 
+  // ---- Day one -----------------------------------------------------------
+  // A short, certain win before any new material.
+  //
+  // Day one is the highest-attrition point in any plan: it is the only day the
+  // learner has no evidence they can do this. Opening with a 10-minute task
+  // that is finishable by definition means the first thing they do is succeed,
+  // and the first checkbox is ticked before the first hard idea arrives.
+  const firstDay = days.find((d) => !d.isFinalStretch);
+  if (firstDay) {
+    place(firstDay.dayIndex, {
+      topicIdx: null,
+      kind: 'buffer',
+      title: 'Set up and skim the map',
+      detail:
+        input.prepType === 'exam'
+          ? 'Ten minutes, no studying. Open the Map tab and read the unit titles so you know the shape of what is coming. Decide where you will sit and at what time each day — deciding once beats deciding daily.'
+          : 'Ten minutes, no studying. Open the Map tab and read the unit titles so you know the shape of what is coming. Set up whatever you will build in, so tomorrow starts with the work and not the tooling.',
+      estMinutes: Math.min(10, firstDay.capacity),
+      resourceRank: null,
+    });
+  }
+
   // Reserve mock slots up front so learn blocks flow around them.
   mockDayIndexes.forEach((dayIndex) => {
     place(dayIndex, {
@@ -277,6 +335,10 @@ export function buildSchedule(input: SchedInput): SchedResult {
 
   let cursor = 1;
   let lastUnit = -1;
+
+  /** Distinct topics whose *first* block landed on a given day. */
+  const newTopicsPerDay = new Map<number, Set<number>>();
+
   const advance = () => {
     while (cursor <= days.length) {
       const day = byIndex.get(cursor)!;
@@ -285,6 +347,38 @@ export function buildSchedule(input: SchedInput): SchedResult {
       cursor++;
     }
     return false;
+  };
+
+  /**
+   * Move the cursor past days that have already met their new-concept quota.
+   *
+   * Only applied when opening a topic — continuing one already in progress is
+   * not new load. Gives up rather than deferring the topic if every remaining
+   * day is full: a slightly overloaded day beats material silently vanishing.
+   */
+  const advanceForNewTopic = (topicIdx: number): boolean => {
+    if (!advance()) return false;
+
+    const start = cursor;
+    while (cursor <= days.length) {
+      const opened = newTopicsPerDay.get(cursor);
+      if (!opened || opened.has(topicIdx) || opened.size < MAX_NEW_TOPICS_PER_DAY) return true;
+      cursor++;
+      if (!advance()) {
+        // Nothing left that satisfies the cap — fall back to the first usable
+        // day rather than dropping the topic.
+        cursor = start;
+        return advance();
+      }
+    }
+    cursor = start;
+    return advance();
+  };
+
+  const markNewTopic = (dayIndex: number, topicIdx: number) => {
+    const opened = newTopicsPerDay.get(dayIndex) ?? new Set<number>();
+    opened.add(topicIdx);
+    newTopicsPerDay.set(dayIndex, opened);
   };
 
   for (const topic of kept) {
@@ -304,16 +398,21 @@ export function buildSchedule(input: SchedInput): SchedResult {
     let learnLeft = Math.max(MIN_CHUNK, Math.round(topic.estMinutes * compression));
     let chunkNo = 0;
     let completedDay = cursor;
+    const chunkCeiling = maxChunkFor(topic.difficulty);
 
     while (learnLeft > 0) {
       // Drain any reviews that came due before scheduling new material.
+      // Retrieval first, then intake: recalling yesterday's topic is what makes
+      // today's stick, and it is the thing a learner skips if it comes last.
       for (const review of reviewQueue.get(cursor) ?? []) place(cursor, review);
       reviewQueue.delete(cursor);
 
-      if (!advance()) break;
+      // Only the first block of a topic counts as new cognitive load.
+      const moved = chunkNo === 0 ? advanceForNewTopic(topic.idx) : advance();
+      if (!moved) break;
 
       const left = remaining.get(cursor)!;
-      const chunk = Math.max(MIN_CHUNK, Math.min(MAX_CHUNK, learnLeft, left));
+      const chunk = Math.max(MIN_CHUNK, Math.min(chunkCeiling, learnLeft, left));
       const multi = learnLeft > chunk || chunkNo > 0;
 
       place(cursor, {
@@ -322,11 +421,13 @@ export function buildSchedule(input: SchedInput): SchedResult {
         title: multi ? `${topic.title} — part ${chunkNo + 1}` : topic.title,
         detail:
           chunkNo === 0
-            ? 'Work through the attached resource actively: pause, take notes in your own words, and write down every question it raises.'
-            : 'Continue where you stopped. Start by recalling the previous block before opening anything.',
+            ? 'Work through the attached resource actively: pause it, write the idea in your own words, and note every question it raises. If you cannot explain it without looking, you have not finished.'
+            : 'Pick up where you stopped — but first, from memory alone, say what the last block established. Check yourself, then continue.',
         estMinutes: chunk,
         resourceRank: chunkNo % 3,
       });
+
+      if (chunkNo === 0) markNewTopic(cursor, topic.idx);
 
       learnLeft -= chunk;
       completedDay = cursor;
@@ -453,6 +554,7 @@ export function buildSchedule(input: SchedInput): SchedResult {
     sessions: nonEmpty,
     deferredTopics: deferred,
     mockDays: [...mockDayIndexes].sort((a, b) => a - b),
+    catchUpDays: days.filter((d) => d.isCatchUp).map((d) => d.dayIndex),
     stats: {
       studyDays: nonEmpty.length,
       totalMinutes,

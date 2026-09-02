@@ -1,4 +1,12 @@
 import { logger } from '../logger/pino';
+import {
+  ProviderError,
+  RETRYABLE_STATUS,
+  MODEL_FATAL_STATUS,
+  parseRetryAfter,
+  backoffMs,
+} from './provider-error';
+import { gateFor, sleep } from './resilience';
 
 export interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -35,6 +43,13 @@ export interface CompletionOptions {
   label?: string;
   /** Omit to leave the model's own default in place. */
   reasoning?: ReasoningControl;
+  /**
+   * Gemini only. Defaults to off: structured generation is schema-filling, and
+   * the thinking pass costs latency without improving the JSON.
+   */
+  thinking?: boolean;
+  /** Per-call ceiling. Defaults to 75s. */
+  timeoutMs?: number;
 }
 
 export interface Usage {
@@ -51,13 +66,13 @@ export interface CompletionResult {
 }
 
 const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
-const RETRYABLE = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
+const DEFAULT_TIMEOUT_MS = 90_000;
 
 /** Rough token estimate used when a provider omits the usage block. */
 export const estimateTokens = (text: string): number => Math.ceil(text.length / 4);
 
 function headers(): Record<string, string> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY?.replace(/^["']|["']$/g, '').trim();
   if (!apiKey) throw new Error('OPENROUTER_API_KEY is not configured');
 
   return {
@@ -75,12 +90,44 @@ function buildBody(options: CompletionOptions, stream: boolean, maxTokens?: numb
     temperature: options.temperature ?? 0.4,
     max_tokens: maxTokens ?? options.maxTokens ?? 2000,
     stream,
+    ...(stream ? { stream_options: { include_usage: true } } : {}),
     ...(options.json ? { response_format: { type: 'json_object' } } : {}),
     ...(options.reasoning ? { reasoning: options.reasoning } : {}),
   });
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+function openRouterError(
+  model: string,
+  status: number,
+  detail: string,
+  retryAfterMs?: number,
+): ProviderError {
+  return new ProviderError(`OpenRouter ${status}: ${detail.slice(0, 400)}`, {
+    provider: 'openrouter',
+    model,
+    status,
+    retryAfterMs,
+    retryable: RETRYABLE_STATUS.has(status),
+    fatalForModel: MODEL_FATAL_STATUS.has(status),
+  });
+}
+
+function withTimeout(signal: AbortSignal | undefined, ms: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error(`timed out after ${ms}ms`)), ms);
+  const onAbort = () => controller.abort(signal?.reason);
+  if (signal) {
+    if (signal.aborted) onAbort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  }
+  return {
+    signal: controller.signal,
+    done: () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+    },
+  };
+}
 
 /**
  * Non-streaming completion with bounded retries.
@@ -91,23 +138,27 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function complete(options: CompletionOptions): Promise<CompletionResult> {
   const retries = options.retries ?? 2;
   const started = Date.now();
-  const baseMaxTokens = options.maxTokens ?? 2000;
-  let maxTokens = baseMaxTokens;
+  let maxTokens = options.maxTokens ?? 2000;
   let lastError: unknown;
   // Cleared if the endpoint rejects the hint as mandatory-reasoning.
   let reasoningControl = options.reasoning;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const { signal, done } = withTimeout(options.signal, options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+
     try {
-      const response = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: headers(),
-        body: buildBody({ ...options, reasoning: reasoningControl }, false, maxTokens),
-        signal: options.signal,
-      });
+      const response = await gateFor('openrouter').run(() =>
+        fetch(ENDPOINT, {
+          method: 'POST',
+          headers: headers(),
+          body: buildBody({ ...options, reasoning: reasoningControl }, false, maxTokens),
+          signal,
+        }),
+      );
 
       if (!response.ok) {
         const detail = await response.text();
+        const retryAfterMs = parseRetryAfter(response.headers.get('retry-after'));
 
         // Some endpoints mandate reasoning and 400 on any attempt to shape it.
         // Drop the hint and retry rather than failing the whole call.
@@ -120,32 +171,47 @@ export async function complete(options: CompletionOptions): Promise<CompletionRe
           continue;
         }
 
-        if (RETRYABLE.has(response.status) && attempt < retries) {
-          // Free-tier upstreams stay rate-limited for seconds, not milliseconds,
-          // so 429 backs off far harder than a generic transient failure.
-          const backoff =
-            response.status === 429
-              ? 4_000 * 2 ** attempt + Math.random() * 1_000
-              : 700 * 2 ** attempt + Math.random() * 300;
+        const error = openRouterError(options.model, response.status, detail, retryAfterMs);
+        if (error.retryable && attempt < retries) {
+          // Free-tier upstreams stay rate-limited for seconds, not
+          // milliseconds, so 429 backs off from a much larger base — and
+          // honours Retry-After exactly when the upstream supplies it.
+          const wait = retryAfterMs ?? backoffMs(attempt, response.status === 429 ? 4_000 : 700);
           logger.warn(
-            { status: response.status, attempt, backoff, label: options.label },
+            { status: response.status, attempt, wait, label: options.label, model: options.model },
             'OpenRouter transient failure, retrying',
           );
-          await sleep(backoff);
+          await sleep(wait);
           continue;
         }
-        throw new Error(`OpenRouter ${response.status}: ${detail.slice(0, 400)}`);
+        throw error;
       }
 
       const data = await response.json();
+
+      // OpenRouter tunnels some upstream failures inside a 200 body.
+      if (data.error) {
+        const status = Number(data.error.code) || 502;
+        const error = openRouterError(options.model, status, data.error.message ?? 'upstream error');
+        if (error.retryable && attempt < retries) {
+          await sleep(backoffMs(attempt, status === 429 ? 4_000 : 900));
+          continue;
+        }
+        throw error;
+      }
+
       const choice = data.choices?.[0];
       const text: string = choice?.message?.content ?? '';
       const reasoning: string = choice?.message?.reasoning ?? '';
       const reasoningTokens: number = data.usage?.completion_tokens_details?.reasoning_tokens ?? 0;
 
       // Some providers echo the reasoning trace into `content`. That is prose,
-      // not an answer, and no amount of JSON repair will rescue it.
-      const leaked = Boolean(reasoning) && text === reasoning;
+      // not an answer, and no amount of JSON repair will rescue it. Observed on
+      // nvidia/nemotron-3.5-lightning:free, which opens with "Here's a
+      // thinking process:" — hence the prefix check as well as the equality one.
+      const leaked =
+        (Boolean(reasoning) && text.trim() === reasoning.trim()) ||
+        /^\s*(?:here'?s (?:a|my) (?:thinking|thought) process|okay,? (?:the user|so) )/i.test(text);
 
       // `length` means the budget ran out mid-answer. On a reasoning model that
       // usually means thinking consumed it, so retry with real headroom rather
@@ -154,8 +220,7 @@ export async function complete(options: CompletionOptions): Promise<CompletionRe
 
       if (!text.trim() || leaked || truncated) {
         if (attempt < retries) {
-          const grow = truncated || leaked;
-          if (grow) maxTokens = Math.min(Math.round(maxTokens * 2), 32_000);
+          if (truncated || leaked) maxTokens = Math.min(Math.round(maxTokens * 2), 32_000);
           logger.warn(
             {
               attempt,
@@ -167,43 +232,48 @@ export async function complete(options: CompletionOptions): Promise<CompletionRe
             },
             'OpenRouter returned unusable content, retrying',
           );
-          await sleep(500 * (attempt + 1));
+          await sleep(backoffMs(attempt, 500, 5_000));
           continue;
         }
         if (!text.trim() || leaked) {
-          throw new Error(
-            `OpenRouter returned no answer (${leaked ? 'reasoning leaked into content' : 'empty completion'}); ` +
+          throw openRouterError(
+            options.model,
+            0,
+            `no answer (${leaked ? 'reasoning leaked into content' : 'empty completion'}); ` +
               `${reasoningTokens} reasoning tokens used of a ${maxTokens} budget`,
           );
         }
-        // Truncated but non-empty on the last attempt: json.ts can often
-        // still close it, so pass it through rather than failing outright.
+        // Truncated but non-empty on the last attempt: json.ts can often still
+        // close it, so pass it through rather than failing outright.
       }
 
       const usage: Usage = {
-        promptTokens: data.usage?.prompt_tokens ?? estimateTokens(options.messages.map((m) => m.content).join('')),
+        promptTokens:
+          data.usage?.prompt_tokens ?? estimateTokens(options.messages.map((m) => m.content).join('')),
         completionTokens: data.usage?.completion_tokens ?? estimateTokens(text),
         totalTokens: data.usage?.total_tokens ?? 0,
       };
       if (!usage.totalTokens) usage.totalTokens = usage.promptTokens + usage.completionTokens;
 
       const ms = Date.now() - started;
-      logger.info(
-        { label: options.label, model: options.model, ...usage, reasoningTokens, ms },
-        'llm.usage',
-      );
+      logger.info({ label: options.label, model: options.model, ...usage, reasoningTokens, ms }, 'llm.usage');
 
       return { text, usage, model: data.model ?? options.model, ms };
     } catch (error) {
       lastError = error;
-      if ((error as Error)?.name === 'AbortError') throw error;
+      if ((error as Error)?.name === 'AbortError' && options.signal?.aborted) throw error;
+      if (error instanceof ProviderError && error.fatalForModel) throw error;
       if (attempt >= retries) break;
-      await sleep(600 * 2 ** attempt);
+      await sleep(backoffMs(attempt, 600));
+    } finally {
+      done();
     }
   }
 
-  logger.error({ error: lastError, label: options.label }, 'OpenRouter completion failed');
-  throw lastError instanceof Error ? lastError : new Error('OpenRouter completion failed');
+  logger.error({ error: lastError, label: options.label, model: options.model }, 'OpenRouter completion failed');
+  throw lastError instanceof Error
+    ? lastError
+    : openRouterError(options.model, 0, 'completion failed for an unknown reason');
 }
 
 /**
@@ -212,12 +282,12 @@ export async function complete(options: CompletionOptions): Promise<CompletionRe
  * whole reply.
  */
 export async function* stream(options: CompletionOptions): AsyncGenerator<string, Usage, void> {
-  let response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: headers(),
-    body: buildBody(options, true),
-    signal: options.signal,
-  });
+  const fire = (body: string) =>
+    gateFor('openrouter').run(() =>
+      fetch(ENDPOINT, { method: 'POST', headers: headers(), body, signal: options.signal }),
+    );
+
+  let response = await fire(buildBody(options, true));
 
   // Turning reasoning off is a large latency win, but some endpoints mandate it
   // and reject the request outright. Drop the hint and retry rather than
@@ -225,22 +295,25 @@ export async function* stream(options: CompletionOptions): AsyncGenerator<string
   if (response.status === 400 && options.reasoning) {
     const detail = await response.text().catch(() => '');
     if (/reasoning/i.test(detail)) {
-      logger.warn({ label: options.label, model: options.model }, 'endpoint mandates reasoning, retrying without the hint');
+      logger.warn(
+        { label: options.label, model: options.model },
+        'endpoint mandates reasoning, retrying without the hint',
+      );
       const { reasoning: _dropped, ...rest } = options;
-      response = await fetch(ENDPOINT, {
-        method: 'POST',
-        headers: headers(),
-        body: buildBody(rest, true),
-        signal: options.signal,
-      });
+      response = await fire(buildBody(rest, true));
     } else {
-      throw new Error(`OpenRouter 400: ${detail.slice(0, 400)}`);
+      throw openRouterError(options.model, 400, detail);
     }
   }
 
   if (!response.ok || !response.body) {
     const detail = await response.text().catch(() => '');
-    throw new Error(`OpenRouter ${response.status}: ${detail.slice(0, 400)}`);
+    throw openRouterError(
+      options.model,
+      response.status,
+      detail,
+      parseRetryAfter(response.headers.get('retry-after')),
+    );
   }
 
   const reader = response.body.getReader();

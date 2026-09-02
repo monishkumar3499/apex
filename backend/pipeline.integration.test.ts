@@ -3,8 +3,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { classifyGoal, sizePlan } from './services/plan-service';
-import { runJson, TokenLedger } from './ai/model-router';
-import { BLUEPRINT_SYSTEM, BLUEPRINT_SCHEMA_HINT, blueprintUser, type BlueprintResult } from './prompts/blueprint';
+import { TokenLedger } from './ai/model-router';
+import { generateBlueprint } from './services/blueprint-builder';
+import { TOPIC_MIN_MINUTES, TOPIC_MAX_MINUTES } from './prompts/blueprint';
 import { curateResources } from './curation/curate';
 import { buildSchedule, type SchedTopic } from './planner/scheduler';
 import { buildDigest } from './services/digest';
@@ -181,31 +182,23 @@ describeLive('live plan pipeline', () => {
       const studyHours = 220;
       const { topicTarget, unitTarget } = sizePlan(studyHours);
 
-      const blueprint = await runJson<BlueprintResult>({
-        tier: 'structured',
-        label: 'blueprint',
-        temperature: 0.25,
-        maxTokens: 6000,
-        schemaHint: BLUEPRINT_SCHEMA_HINT,
+      const structureStarted = Date.now();
+      const generation = await generateBlueprint({
+        req: {
+          subject: intake.sub,
+          prepType: intake.pt,
+          scope: intake.scope,
+          level: 'intermediate',
+          weeks: 26,
+          studyHours,
+          topicTarget,
+          unitTarget,
+          extras: {},
+        },
         ledger,
-        messages: [
-          { role: 'system', content: BLUEPRINT_SYSTEM },
-          {
-            role: 'user',
-            content: blueprintUser({
-              subject: intake.sub,
-              prepType: intake.pt,
-              scope: intake.scope,
-              level: 'intermediate',
-              weeks: 26,
-              studyHours,
-              topicTarget,
-              unitTarget,
-              extras: {},
-            }),
-          },
-        ],
       });
+      const blueprint = generation.blueprint;
+      const structureMs = Date.now() - structureStarted;
 
       const units = (blueprint.u ?? []).filter((u) => u?.t && u.tp?.length);
       const topics = units.flatMap((u, unitIdx) =>
@@ -214,7 +207,9 @@ describeLive('live plan pipeline', () => {
 
       console.log(
         'BLUEPRINT →',
-        `${units.length} units, ${topics.length} topics (target ${topicTarget})`,
+        `${units.length} units, ${topics.length} topics (target ${topicTarget}) ` +
+          `in ${(structureMs / 1000).toFixed(1)}s ` +
+          `[sharded: ${generation.sharded}, degraded units: ${generation.degradedUnits.length}]`,
       );
       console.log('  units:', units.map((u) => u.t).join(' | '));
 
@@ -222,6 +217,17 @@ describeLive('live plan pipeline', () => {
       expect(topics.length).toBeGreaterThanOrEqual(Math.floor(topicTarget * 0.5));
       // Every unit must supply a search intent, or curation has nothing to go on.
       expect(units.every((u) => (u.q ?? []).length > 0 || u.t)).toBe(true);
+
+      // Sharding is the whole point of the two-stage generator. If it silently
+      // fell back to one combined call on a ten-unit plan, the latency work is
+      // not actually running and this test should say so.
+      expect(generation.sharded).toBe(true);
+
+      // Every topic must be finishable: a 240-minute topic reaches the learner
+      // as four consecutive blocks carrying the same title.
+      const topicMinutes = topics.map((t) => Number(t.m)).filter(Number.isFinite);
+      expect(Math.max(...topicMinutes)).toBeLessThanOrEqual(TOPIC_MAX_MINUTES);
+      expect(Math.min(...topicMinutes)).toBeGreaterThanOrEqual(TOPIC_MIN_MINUTES);
 
       // ---- Stage 3 · curation (no model) --------------------------------
       const curation = await curateResources({
@@ -235,8 +241,9 @@ describeLive('live plan pipeline', () => {
           keywords: (t.k ?? []).map(String),
           unitIdx: t.unitIdx,
         })),
-        videoSearchBudget: 5,
-        webSearchBudget: 3,
+        videoSearchBudget: Math.min(14, units.length + 2),
+        webSearchBudget: Math.min(8, units.length),
+        gapSearchBudget: Math.min(12, Math.max(6, Math.round(topics.length / 4))),
       });
 
       console.log('CURATION →', curation.stats);
@@ -269,7 +276,7 @@ describeLive('live plan pipeline', () => {
         idx,
         unitIdx: t.unitIdx,
         title: String(t.t),
-        estMinutes: Math.max(20, Math.min(360, Number(t.m) || 75)),
+        estMinutes: Math.max(TOPIC_MIN_MINUTES, Math.min(TOPIC_MAX_MINUTES, Number(t.m) || 60)),
         difficulty: Math.max(1, Math.min(5, Number(t.d) || 3)),
         weight: Math.max(1, Math.min(5, Number(t.w) || 3)),
         dependsOn: (t.dep ?? []).map((d) => Number(d) - 1).filter((d) => d >= 0 && d < idx),
@@ -337,8 +344,19 @@ describeLive('live plan pipeline', () => {
       console.log('\nTOKENS →', total, ledger.breakdown);
       console.log(`ELAPSED → ${((Date.now() - started) / 1000).toFixed(1)}s\n`);
 
-      // Two model calls for a 26-week plan. The old design spent ~13k.
-      expect(total.totalTokens).toBeLessThan(12_000);
+      // Sharded generation trades tokens for wall-clock, and the budget has to
+      // say so honestly rather than be quietly relaxed.
+      //
+      // One combined call for this plan measured ~8k tokens in 33s. Sharding it
+      // measures ~13-16k in ~28s while producing ~25% more topics: each shard
+      // re-sends the system prompt and the full unit list, so prompt tokens
+      // roughly triple. Output tokens are what cost latency, and those are now
+      // spread across concurrent calls; prompt tokens are processed in parallel
+      // and are free on this tier.
+      //
+      // The ceiling is here to catch a real regression — a runaway repair loop,
+      // or a shard fallback chain firing on every request.
+      expect(total.totalTokens).toBeLessThan(24_000);
     },
     { timeout: 300_000 },
   );

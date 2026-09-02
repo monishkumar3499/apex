@@ -45,6 +45,48 @@ export interface CurationInput {
   webSearchBudget?: number;
   /** Ceiling on second-pass searches for topics left uncovered. */
   gapSearchBudget?: number;
+  /** In-flight subject-level searches started before the blueprint returned. */
+  discovery?: SubjectDiscovery;
+}
+
+/**
+ * Subject-level searches that do not depend on the blueprint.
+ *
+ * A "complete course" playlist query and "<subject> official syllabus" need
+ * only the subject and the prep type — both of which are known the moment the
+ * plan row is created, several seconds before the structure model returns.
+ * Running them concurrently with that call removes their latency from the
+ * build entirely rather than making them faster.
+ */
+export interface SubjectDiscovery {
+  playlists: Promise<Awaited<ReturnType<typeof searchPlaylists>>>;
+  web: Promise<Awaited<ReturnType<typeof searchWeb>>[]>;
+  queries: string[];
+}
+
+export function startSubjectDiscovery(params: {
+  subject: string;
+  prepType: 'exam' | 'skill' | 'hybrid';
+}): SubjectDiscovery {
+  const playlistQuery =
+    params.prepType === 'exam'
+      ? `${params.subject} full syllabus lecture series`
+      : `${params.subject} complete course`;
+
+  const queries = [
+    params.prepType === 'exam'
+      ? `${params.subject} official syllabus exam pattern`
+      : `${params.subject} roadmap skills required`,
+    `${params.subject} best resources books documentation`,
+  ];
+
+  return {
+    // Both tools already swallow their own failures and return [], so an
+    // unawaited rejection here is not possible.
+    playlists: searchPlaylists(playlistQuery, 4),
+    web: Promise.all(queries.map((q) => searchWeb(q, { maxResults: 6 }))),
+    queries,
+  };
 }
 
 /** A curated resource plus the unit whose search surfaced it. */
@@ -101,24 +143,25 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
     .slice(0, Math.max(1, videoBudget - 1))
     .map((u) => ({ unitIdx: u.idx, query: u.queries[0] || `${input.subject} ${u.title}` }));
 
-  const playlistQuery =
-    input.prepType === 'exam'
-      ? `${input.subject} full syllabus lecture series`
-      : `${input.subject} complete course`;
+  // Subject-level searches may already be in flight, started before the
+  // blueprint call. When they are, awaiting them here costs nothing: they have
+  // been running for as long as the structure model took.
+  const discovery = input.discovery ?? startSubjectDiscovery(input);
 
-  const webQueries = [
-    input.prepType === 'exam'
-      ? `${input.subject} official syllabus exam pattern`
-      : `${input.subject} roadmap skills required`,
-    `${input.subject} best resources books documentation`,
-    ...input.units.slice(0, Math.max(0, webBudget - 2)).map((u) => `${u.title} ${input.subject} tutorial`),
-  ].slice(0, webBudget);
+  // Unit-specific web queries still need the blueprint, so they start now.
+  const unitWebQueries = input.units
+    .slice(0, Math.max(0, webBudget - discovery.queries.length))
+    .map((u) => `${u.title} ${input.subject} tutorial`);
 
-  const [unitBatches, playlists, webBatches] = await Promise.all([
+  const [unitBatches, playlists, subjectWeb, unitWeb] = await Promise.all([
     Promise.all(unitPlan.map((u) => searchVideos(u.query, 12))),
-    searchPlaylists(playlistQuery, 4),
-    Promise.all(webQueries.map((q) => searchWeb(q, { maxResults: 6 }))),
+    discovery.playlists,
+    discovery.web,
+    Promise.all(unitWebQueries.map((q) => searchWeb(q, { maxResults: 6 }))),
   ]);
+
+  const webBatches = [...subjectWeb, ...unitWeb];
+  const webQueries = [...discovery.queries, ...unitWebQueries];
 
   videoSearches = unitPlan.length + 1;
 

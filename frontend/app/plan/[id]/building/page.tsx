@@ -4,9 +4,10 @@ import * as React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Check, Loader2, AlertTriangle, Compass, Sparkles, RefreshCw, ArrowLeft,
+  Check, Loader2, AlertTriangle, Compass, RefreshCw, ArrowLeft, ShieldCheck,
 } from 'lucide-react';
-import { Button, Card } from '../../../../components/ui';
+import { Button, Card, Progress } from '../../../../components/ui';
+import { InsightStream } from '../../../../components/insight-stream';
 import { cn } from '../../../../lib/utils';
 
 /** Stages in the order the pipeline emits them. */
@@ -16,14 +17,6 @@ const STAGES = [
   { key: 'resources', label: 'Finding real material', hint: 'Ranking lectures and docs on engagement and authority' },
   { key: 'schedule', label: 'Laying out your days', hint: 'Fitting the work to the hours you actually have' },
   { key: 'ready', label: 'Finishing up', hint: 'Spaced review, checkpoints and mocks placed' },
-];
-
-const NOTES = [
-  'Resources are fetched from live APIs and ranked on real watch data — a model never writes a URL, so no link is ever invented.',
-  'Your schedule is computed, not generated. No day is ever booked past the capacity you gave us.',
-  'Every topic comes back at 2, 7 and 21 days. Learning something once is not learning it.',
-  'If the material cannot fit your timeline, APEX defers the lowest-value topics instead of squeezing everything into uselessness.',
-  'Unit checkpoints and full mocks are spaced through the plan, so you find gaps early rather than the week before.',
 ];
 
 interface StageEvent {
@@ -41,12 +34,14 @@ export default function BuildingPage() {
 
   const [events, setEvents] = React.useState<StageEvent[]>([]);
   const [failed, setFailed] = React.useState<string | null>(null);
-  const [note, setNote] = React.useState(0);
   const [retrying, setRetrying] = React.useState(false);
+  const [elapsed, setElapsed] = React.useState(0);
 
+  // An honest elapsed counter beats a fake progress estimate: it never
+  // overshoots, and it tells the learner the build is still moving.
   React.useEffect(() => {
-    const rotate = setInterval(() => setNote((n) => (n + 1) % NOTES.length), 6500);
-    return () => clearInterval(rotate);
+    const tick = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(tick);
   }, []);
 
   React.useEffect(() => {
@@ -54,9 +49,7 @@ export default function BuildingPage() {
 
     source.addEventListener('stage', (event) => {
       const data = JSON.parse((event as MessageEvent).data) as StageEvent;
-      setEvents((current) =>
-        current.some((e) => e.id === data.id) ? current : [...current, data],
-      );
+      setEvents((current) => (current.some((e) => e.id === data.id) ? current : [...current, data]));
     });
 
     source.addEventListener('done', (event) => {
@@ -66,6 +59,8 @@ export default function BuildingPage() {
       if (data.status === 'ready') {
         // Small beat so the last stage visibly lands before navigating.
         setTimeout(() => router.replace(`/plan/${planId}/today`), 700);
+      } else if (data.status === 'timeout') {
+        setFailed('The build is taking longer than expected. It may still finish — reload to check.');
       } else {
         setFailed(data.error ?? 'The build stopped unexpectedly.');
       }
@@ -80,13 +75,10 @@ export default function BuildingPage() {
     if (matching.some((e) => e.status === 'error')) return 'error';
     if (matching.some((e) => e.status === 'ok')) return 'done';
     if (matching.length) return 'active';
-
-    // A later stage having started implies this one finished.
-    const order = STAGES.findIndex((s) => s.key === key);
-    const reached = STAGES.findIndex((s) => events.some((e) => e.stage === s.key));
-    return reached !== -1 && reached < order && events.length > 0 && order <= reached ? 'done' : 'pending';
+    return 'pending';
   };
 
+  const doneCount = STAGES.filter((s) => stageState(s.key) === 'done').length;
   const firstPending = STAGES.findIndex((s) => stageState(s.key) !== 'done');
   const latest = events[events.length - 1];
 
@@ -102,25 +94,26 @@ export default function BuildingPage() {
 
   if (failed) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-5">
-        <Card raised className="w-full max-w-md rounded-panel p-8 text-center animate-in">
+      <div className="flex min-h-dvh items-center justify-center px-4 py-16 sm:px-5">
+        <Card raised className="w-full max-w-md rounded-panel p-6 text-center animate-in sm:p-8">
           <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-danger/12 text-danger">
             <AlertTriangle className="h-6 w-6" />
           </div>
-          <h1 className="font-display text-xl font-semibold">The build did not finish</h1>
+          <h1 className="font-display text-lg font-semibold sm:text-xl">The build did not finish</h1>
           <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">{failed}</p>
-          <p className="mt-3 text-xs text-ink-faint">
-            This is usually a busy model endpoint. Retrying almost always works.
+          <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+            This is usually a busy model endpoint. APEX tries several models before giving up, so a
+            retry almost always works.
           </p>
 
-          <div className="mt-7 flex justify-center gap-2">
-            <Link href="/app">
-              <Button variant="ghost">
+          <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+            <Link href="/app" className="sm:w-auto">
+              <Button variant="ghost" className="w-full sm:w-auto">
                 <ArrowLeft className="h-4 w-4" />
                 All plans
               </Button>
             </Link>
-            <Button onClick={retry} loading={retrying}>
+            <Button onClick={retry} loading={retrying} className="w-full sm:w-auto">
               <RefreshCw className="h-4 w-4" />
               Try again
             </Button>
@@ -131,7 +124,7 @@ export default function BuildingPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center px-5 py-16">
+    <div className="relative flex min-h-dvh items-center justify-center px-4 py-12 sm:px-5 sm:py-16">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(55%_70%_at_50%_0%,rgb(var(--accent)/0.10),transparent_72%)]"
@@ -142,15 +135,25 @@ export default function BuildingPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-fg animate-pulse-ring">
             <Compass className="h-6 w-6" strokeWidth={2.5} />
           </div>
-          <h1 className="mt-6 font-display text-2xl font-semibold tracking-tight">
+          <h1 className="mt-6 font-display text-xl font-semibold tracking-tight sm:text-2xl">
             Building your prep map
           </h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            About two minutes. You can leave this page — it keeps building.
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            Usually under a minute. You can close this tab — it keeps building.
           </p>
         </div>
 
-        <Card raised className="mt-9 rounded-panel p-6">
+        <div className="mt-7">
+          <Progress value={(doneCount / STAGES.length) * 100} />
+          <div className="mt-2 flex items-center justify-between text-2xs text-ink-faint">
+            <span>
+              {doneCount} of {STAGES.length} stages
+            </span>
+            <span className="tabular">{formatElapsed(elapsed)}</span>
+          </div>
+        </div>
+
+        <Card raised className="mt-5 rounded-panel p-4 sm:p-6">
           <ol className="space-y-1">
             {STAGES.map((stage, index) => {
               const state = index === firstPending && events.length > 0 ? 'active' : stageState(stage.key);
@@ -160,7 +163,7 @@ export default function BuildingPage() {
                 <li
                   key={stage.key}
                   className={cn(
-                    'flex gap-3 rounded-lg px-3 py-2.5 transition-colors',
+                    'flex gap-3 rounded-lg px-2.5 py-2.5 transition-colors sm:px-3',
                     state === 'active' && 'bg-accent/[0.07]',
                   )}
                 >
@@ -199,15 +202,24 @@ export default function BuildingPage() {
           {latest?.meta && Object.keys(latest.meta).length > 0 && <BuildStats meta={latest.meta} />}
         </Card>
 
-        <div className="mt-6 flex gap-2.5 rounded-xl border border-line bg-surface-2 px-4 py-3.5">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-          <p key={note} className="text-xs leading-relaxed text-ink-muted animate-in">
-            {NOTES[note]}
-          </p>
-        </div>
+        {/* The wait, made worth having. */}
+        <InsightStream className="mt-5" />
+
+        <p className="mt-4 flex items-start justify-center gap-1.5 px-2 text-center text-2xs leading-relaxed text-ink-faint">
+          <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0" />
+          <span>
+            Every resource comes from a live API and is ranked on real watch data — no link in your
+            plan was written by a model.
+          </span>
+        </p>
       </div>
     </div>
   );
+}
+
+function formatElapsed(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
 }
 
 /** Surfaces the concrete numbers as each stage reports them. */

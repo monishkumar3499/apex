@@ -22,6 +22,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Deliberately NOT `maximumScale: 1` / `userScalable: false`. Locking zoom is
+  // the usual way a "mobile-optimised" app becomes unusable for anyone who
+  // needs to magnify text, and it fails WCAG 1.4.4.
+  viewportFit: 'cover',
+  // Keeps a fixed bottom bar above the on-screen keyboard instead of being
+  // pushed off-screen by it.
+  interactiveWidget: 'resizes-content',
   themeColor: [
     { media: '(prefers-color-scheme: dark)', color: '#090c14' },
     { media: '(prefers-color-scheme: light)', color: '#fafaf9' },

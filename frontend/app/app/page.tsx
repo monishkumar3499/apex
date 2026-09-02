@@ -83,7 +83,7 @@ export default async function PlansPage() {
             }
           />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {list.map((plan) => (
               <PlanCard key={plan.id} plan={plan} today={todayLoad.get(plan.id)} />
             ))}

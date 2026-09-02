@@ -37,9 +37,16 @@ export interface SessionUser {
   avatarUrl: string | null;
 }
 
+/** Is the auth bypass on? Quote-stripped, because `.env` files keep quotes. */
+export const demoMode = () => clean(process.env.NEXT_PUBLIC_DEMO_MODE) === 'true';
+
 /** Resolve the signed-in user, or null. Honours DEMO_MODE for local runs. */
 export async function currentUser(): Promise<SessionUser | null> {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+  // Read through `clean()` like every other consumer. Comparing the raw value
+  // meant a quoted `"true"` in .env silently disabled demo mode here while
+  // middleware still honoured it — auth then half-applied, which is worse
+  // than either mode.
+  if (demoMode()) {
     return { id: DEMO_USER_ID, email: 'demo@apex.app', name: 'Demo Learner', avatarUrl: null };
   }
 

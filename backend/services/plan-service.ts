@@ -3,14 +3,15 @@ import { admin, must } from '../db/supabase';
 import { runJson, TokenLedger } from '../ai/model-router';
 import { INTAKE_SYSTEM, INTAKE_SCHEMA_HINT, intakeUser, type IntakeResult } from '../prompts/intake';
 import {
-  BLUEPRINT_SYSTEM,
-  BLUEPRINT_SCHEMA_HINT,
-  blueprintUser,
   normalizeBlueprint,
+  BLUEPRINT_VERSION,
+  TOPIC_MIN_MINUTES,
+  TOPIC_MAX_MINUTES,
   type BlueprintResult,
 } from '../prompts/blueprint';
+import { generateBlueprint } from './blueprint-builder';
 import { welcomeMessage } from '../prompts/coach';
-import { curateResources } from '../curation/curate';
+import { curateResources, startSubjectDiscovery } from '../curation/curate';
 import { buildSchedule, type SchedTopic } from '../planner/scheduler';
 import { diffDays, todayIso } from '../planner/calendar';
 import { buildDigest } from './digest';
@@ -20,12 +21,17 @@ import { logger } from '../logger/pino';
 /**
  * Plan build orchestration.
  *
- * Two model calls total, regardless of plan size:
- *   1. classify  (nano tier, ~400 tokens)
- *   2. blueprint (structured tier, ~2,300 tokens — skipped entirely on a cache hit)
+ * Model calls, regardless of plan size:
+ *   1. classify   nano tier, ~400 tokens
+ *   2. blueprint  structured tier — an outline call plus 2-3 concurrent topic
+ *                 calls (see blueprint-builder). Skipped on a cache hit.
  *
  * Everything else — resource discovery, scheduling, the digest, the welcome
- * message — is code. A 26-week plan costs about 2.7k tokens to build.
+ * message — is code, and costs nothing.
+ *
+ * The stages are ordered for wall-clock, not for readability: subject-level
+ * resource discovery starts before the structure call, and curation runs
+ * alongside the database writes, because neither depends on the other.
  */
 
 export interface PlanInput {
@@ -104,13 +110,24 @@ export async function classifyGoal(params: {
 /**
  * How many topics a plan should contain.
  *
- * Anchored to real study capacity, not to a fixed number. Roughly one topic
- * per 2.5 hours of first-pass study, because each topic also carries practice
- * and three review passes.
+ * Anchored to real study capacity, not to a fixed number.
+ *
+ * The divisor sets the average topic size, and that single number decides
+ * whether the plan feels usable. At one topic per 2.5 hours the average entry
+ * was a 150-minute block — three evenings of the same title, which reads to a
+ * learner as a plan that has stalled and to the scheduler as "Topic 4 — part
+ * 3". At 1.75 the average lands near 105 minutes and, with the prompt's
+ * 120-minute ceiling, most topics come out at one or two sittings: small
+ * enough to finish, which is what keeps someone returning.
+ *
+ * More topics costs blueprint output tokens, and output tokens are serial.
+ * That is paid for twice over: Gemini's thinking budget is off, and generation
+ * is sharded across concurrent calls rather than emitted in one response.
  */
 export function sizePlan(studyHours: number): { topicTarget: number; unitTarget: number } {
-  const topicTarget = Math.max(10, Math.min(70, Math.round(studyHours / 2.5)));
-  const unitTarget = Math.max(3, Math.min(10, Math.round(topicTarget / 5)));
+  const topicTarget = Math.max(12, Math.min(80, Math.round(studyHours / 1.75)));
+  // Six topics per unit keeps a unit reviewable in one checkpoint sitting.
+  const unitTarget = Math.max(3, Math.min(12, Math.round(topicTarget / 6)));
   return { topicTarget, unitTarget };
 }
 
@@ -180,7 +197,9 @@ async function event(planId: string, userId: string, stage: string, status: stri
 const cacheKey = (slug: string, prepType: string, level: string, hours: number) =>
   createHash('sha1')
     // Bucket hours so "119h" and "124h" share a skeleton instead of both paying for generation.
-    .update([slug, prepType, level, Math.round(hours / 25) * 25].join('|'))
+    // BLUEPRINT_VERSION is in the key so a change to the prompt invalidates the
+    // cache: otherwise returning learners keep getting the old structure.
+    .update([BLUEPRINT_VERSION, slug, prepType, level, Math.round(hours / 25) * 25].join('|'))
     .digest('hex');
 
 export async function buildPlan(planId: string): Promise<void> {
@@ -215,6 +234,15 @@ export async function buildPlan(planId: string): Promise<void> {
     const weeks = Math.max(1, Math.round(diffDays(plan.start_date, plan.target_date) / 7));
     const { topicTarget, unitTarget } = sizePlan(studyHours);
 
+    // ---- Latency: start what does not depend on the model ---------------
+    //
+    // The playlist sweep and the two subject-level web searches need only the
+    // subject and the prep type, both known already. Firing them here means
+    // they run *underneath* the structure call instead of after it, which takes
+    // several seconds off the wall-clock time a learner spends watching the
+    // build screen. Nothing awaits them until curation.
+    const discovery = startSubjectDiscovery({ subject, prepType: plan.prep_type });
+
     // ---- Stage 2 · structure (cached across users) ----------------------
     await event(planId, userId, 'structure', 'running', `Designing ${topicTarget} topics across ${unitTarget} units`);
 
@@ -232,60 +260,52 @@ export async function buildPlan(planId: string): Promise<void> {
         .eq('cache_key', key);
       await event(planId, userId, 'structure', 'ok', 'Reused a verified structure for this subject', { cached: true });
     } else {
-      const generated = await runJson<BlueprintResult>({
-        tier: 'structured',
-        label: 'blueprint',
-        temperature: 0.25,
-        // A 37-topic blueprint is ~3k tokens of JSON. The headroom above that
-        // is for reasoning models, which bill their thinking against the same
-        // budget — at 6000 they spent it all thinking and returned nothing.
-        maxTokens: 16000,
-        reasoning: { effort: 'low' },
-        schemaHint: BLUEPRINT_SCHEMA_HINT,
+      // Generated as an outline plus concurrent per-slice topic calls. One
+      // combined call for this much structure measured at 33 seconds against
+      // the live API, and it is the longest thing a learner waits on.
+      const generation = await generateBlueprint({
+        req: {
+          subject,
+          prepType: plan.prep_type,
+          scope: intake.scope ?? `Working competence in ${subject}`,
+          level: plan.skill_level,
+          weeks,
+          studyHours,
+          topicTarget,
+          unitTarget,
+          extras: (plan.intake ?? {}) as Record<string, string>,
+        },
         ledger,
-        messages: [
-          { role: 'system', content: BLUEPRINT_SYSTEM },
-          {
-            role: 'user',
-            content: blueprintUser({
-              subject,
-              prepType: plan.prep_type,
-              scope: intake.scope ?? `Working competence in ${subject}`,
-              level: plan.skill_level,
-              weeks,
-              studyHours,
-              topicTarget,
-              unitTarget,
-              extras: (plan.intake ?? {}) as Record<string, string>,
-            }),
-          },
-        ],
+        onProgress: (message, meta) => event(planId, userId, 'structure', 'running', message, meta ?? {}),
       });
 
-      // Normalise before caching so the shape is fixed once, not on every read.
-      blueprint = normalizeBlueprint(generated);
+      blueprint = generation.blueprint;
+
+      // A partially degraded structure is still cacheable — but say so, rather
+      // than letting the next learner inherit a gap silently.
+      if (generation.degradedUnits.length) {
+        await event(
+          planId,
+          userId,
+          'structure',
+          'warn',
+          `${generation.degradedUnits.length} unit(s) could not be detailed and were left out`,
+          { units: generation.degradedUnits.slice(0, 8) },
+        );
+      }
 
       if (blueprint.u.length) {
         await db.from('blueprint_cache').upsert({ cache_key: key, payload: blueprint as any, hits: 1 });
       }
-      await event(planId, userId, 'structure', 'ok', `Mapped ${blueprint.u.length} units`);
+      await event(planId, userId, 'structure', 'ok', `Mapped ${blueprint.u.length} units`, {
+        sharded: generation.sharded,
+      });
     }
 
     const units = (blueprint.u ?? []).filter((u) => u?.t && Array.isArray(u.tp) && u.tp.length);
     if (!units.length) throw new Error('The model returned no usable structure for this goal');
 
-    // ---- Persist units & topics ----------------------------------------
-    const unitRows = units.map((u, i) => ({
-      plan_id: planId,
-      user_id: userId,
-      idx: i,
-      title: String(u.t).slice(0, 200),
-      summary: u.s ? String(u.s).slice(0, 500) : null,
-      weight: Math.max(1, Math.min(5, Number(u.w) || 3)),
-    }));
-    const savedUnits = must(await db.from('units').insert(unitRows).select('id, idx'), 'insertUnits');
-    const unitIdById = new Map(savedUnits.map((u: any) => [u.idx, u.id]));
-
+    // ---- Shape the topics (no database involved yet) --------------------
     let topicOrdinal = 0;
     const topicRows = units.flatMap((u, unitIdx) =>
       u.tp.filter((t) => t?.t).map((t) => {
@@ -293,13 +313,14 @@ export async function buildPlan(planId: string): Promise<void> {
         return {
           plan_id: planId,
           user_id: userId,
-          unit_id: unitIdById.get(unitIdx),
           idx,
           title: String(t.t).slice(0, 200),
           summary: t.s ? String(t.s).slice(0, 600) : null,
           outcomes: (t.o ?? []).slice(0, 4).map((o) => String(o).slice(0, 200)),
           keywords: (t.k ?? []).slice(0, 8).map((k) => String(k).toLowerCase().slice(0, 60)),
-          est_minutes: Math.max(20, Math.min(360, Number(t.m) || 75)),
+          // Bounded by the same limits the prompt states, so a model that
+          // ignores them cannot produce a five-block monolith of one title.
+          est_minutes: Math.max(TOPIC_MIN_MINUTES, Math.min(TOPIC_MAX_MINUTES, Number(t.m) || 60)),
           difficulty: Math.max(1, Math.min(5, Number(t.d) || 3)),
           weight: Math.max(1, Math.min(5, Number(t.w) || 3)),
           // Model emits 1-based global ordinals; store 0-based and drop forward refs.
@@ -311,20 +332,26 @@ export async function buildPlan(planId: string): Promise<void> {
       }),
     );
 
-    const savedTopics = must(
-      await db.from('topics').insert(topicRows.map(({ _unitIdx, ...row }) => row)).select('id, idx'),
-      'insertTopics',
-    );
-    const topicIdByIdx = new Map(savedTopics.map((t: any) => [t.idx, t.id]));
-
-    await event(planId, userId, 'topics', 'ok', `${topicRows.length} topics structured`);
-
     // ---- Stage 3 · resource curation (no model involved) ----------------
+    //
+    // Started *before* the inserts, because curation depends only on the
+    // blueprint — titles, keywords and unit membership — and not on a single
+    // database id. It used to run after two sequential round trips that it had
+    // no need to wait for.
     await event(planId, userId, 'resources', 'running', 'Finding and ranking real study material');
 
-    const curation = await curateResources({
+    const curationPromise = curateResources({
       subject,
       prepType: plan.prep_type,
+      discovery,
+      // Budgets follow plan size. Fixed ones meant a ten-unit plan got searches
+      // for seven of its units and a gap pass for eight of its sixty-five
+      // topics — measured coverage was 28/65. YouTube search.list costs 100
+      // quota units of a 10,000/day allowance, so this stays inside roughly
+      // 2,500 units for the largest plans.
+      videoSearchBudget: Math.min(14, units.length + 2),
+      webSearchBudget: Math.min(8, units.length),
+      gapSearchBudget: Math.min(12, Math.max(6, Math.round(topicRows.length / 4))),
       units: units.map((u, i) => ({ idx: i, title: String(u.t), queries: (u.q ?? []).map(String) })),
       topics: topicRows.map((t) => ({
         idx: t.idx,
@@ -334,6 +361,34 @@ export async function buildPlan(planId: string): Promise<void> {
         unitIdx: t._unitIdx,
       })),
     });
+    // Claim the rejection now: if an insert below throws first, an unobserved
+    // rejection here would take the process down instead of failing the build.
+    curationPromise.catch(() => undefined);
+
+    // ---- Persist units & topics (concurrent with curation) --------------
+    const unitRows = units.map((u, i) => ({
+      plan_id: planId,
+      user_id: userId,
+      idx: i,
+      title: String(u.t).slice(0, 200),
+      summary: u.s ? String(u.s).slice(0, 500) : null,
+      weight: Math.max(1, Math.min(5, Number(u.w) || 3)),
+    }));
+    const savedUnits = must(await db.from('units').insert(unitRows).select('id, idx'), 'insertUnits');
+    const unitIdById = new Map(savedUnits.map((u: any) => [u.idx, u.id]));
+
+    const savedTopics = must(
+      await db
+        .from('topics')
+        .insert(topicRows.map(({ _unitIdx, ...row }) => ({ ...row, unit_id: unitIdById.get(_unitIdx) })))
+        .select('id, idx'),
+      'insertTopics',
+    );
+    const topicIdByIdx = new Map(savedTopics.map((t: any) => [t.idx, t.id]));
+
+    await event(planId, userId, 'topics', 'ok', `${topicRows.length} topics structured`);
+
+    const curation = await curationPromise;
 
     const resourceIdByUrl = new Map<string, string>();
     if (curation.resources.length) {
@@ -472,24 +527,34 @@ export async function buildPlan(planId: string): Promise<void> {
     );
 
     // Chunked insert — a year-long plan can exceed 2,000 rows.
-    for (let i = 0; i < itemRows.length; i += 500) {
-      must(await db.from('session_items').insert(itemRows.slice(i, i + 500)).select('id'), 'insertItems');
-    }
+    //
+    // The chunks go out together rather than one after another. They are
+    // independent inserts into the same table, so serialising them made a
+    // 2,000-item plan pay four sequential round trips for no ordering benefit.
+    // `.select('id')` is dropped: the ids are never read, and returning 500
+    // rows per chunk is pure transfer cost.
+    const itemChunks: Array<typeof itemRows> = [];
+    for (let i = 0; i < itemRows.length; i += 500) itemChunks.push(itemRows.slice(i, i + 500));
 
-    // Scheduled mocks get a first-class row so the drill surface can find them.
-    if (schedule.mockDays.length) {
-      const mockRows = schedule.mockDays.map((day, i) => {
-        const session = schedule.sessions.find((s) => s.dayIndex === day);
-        return {
-          plan_id: planId,
-          user_id: userId,
-          title: `Mock ${i + 1}`,
-          scheduled_on: session?.date ?? null,
-          duration_min: plan.prep_type === 'exam' ? 120 : 75,
-        };
-      });
-      await db.from('mocks').insert(mockRows);
-    }
+    // Mocks are independent of the items, so they ride along in the same batch.
+    const mockRows = schedule.mockDays.map((day, i) => {
+      const session = schedule.sessions.find((s) => s.dayIndex === day);
+      return {
+        plan_id: planId,
+        user_id: userId,
+        title: `Mock ${i + 1}`,
+        scheduled_on: session?.date ?? null,
+        duration_min: plan.prep_type === 'exam' ? 120 : 75,
+      };
+    });
+
+    const writes = await Promise.all([
+      ...itemChunks.map((chunk) => db.from('session_items').insert(chunk)),
+      ...(mockRows.length ? [db.from('mocks').insert(mockRows)] : []),
+    ]);
+    // A failed chunk must still fail the build — a plan missing a quarter of
+    // its days is worse than a plan that reports it could not be built.
+    writes.forEach((result, i) => must({ data: result.data ?? [], error: result.error }, `insertItems[${i}]`));
 
     await event(planId, userId, 'schedule', 'ok', `${schedule.sessions.length} study days scheduled`, schedule.stats);
 

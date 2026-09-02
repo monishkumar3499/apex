@@ -21,6 +21,16 @@ const NAV = [
   { slug: 'progress', label: 'Progress', icon: LineChart },
 ];
 
+/**
+ * The four destinations that get used daily.
+ *
+ * A six-item tab bar on a 360px screen gives each tab 60px, which is too
+ * narrow for a label and reads as a toolbar rather than navigation. Library
+ * and Progress are reference surfaces, not daily ones, so they stay in the
+ * drawer and the bar keeps comfortable targets.
+ */
+const TAB_BAR = ['today', 'map', 'drill', 'coach'];
+
 const PACE: Record<string, { label: string; className: string }> = {
   ahead: { label: 'Ahead', className: 'text-success' },
   'on-track': { label: 'On pace', className: 'text-success' },
@@ -53,6 +63,20 @@ export function PlanSidebar({
 
   React.useEffect(() => { setOpen(false); }, [pathname]);
 
+  // A drawer that leaves the page scrollable behind it is the single most
+  // common mobile-nav bug: the backdrop moves under your finger.
+  React.useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
   const progress = pct(plan.doneItems, plan.totalItems);
   const pace = PACE[paceStatus] ?? PACE['on-track'];
 
@@ -67,7 +91,7 @@ export function PlanSidebar({
       <div className="px-3 pt-4">
         <Link
           href="/app"
-          className="mb-4 inline-flex items-center gap-1.5 px-2 text-xs text-ink-faint transition-colors hover:text-ink"
+          className="mb-4 inline-flex min-h-touch items-center gap-1.5 px-2 text-xs text-ink-faint transition-colors hover:text-ink"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           All plans
@@ -97,7 +121,7 @@ export function PlanSidebar({
       <div className="mx-3 my-4 h-px bg-line" />
 
       {/* ----------------------------------------------------------- nav */}
-      <nav className="flex-1 space-y-0.5 px-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3">
         {NAV.map(({ slug, label, icon: Icon }) => {
           const href = `/plan/${plan.id}/${slug}`;
           const active = pathname === href;
@@ -107,7 +131,7 @@ export function PlanSidebar({
               href={href}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
+                'flex min-h-touch items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
                 active
                   ? 'bg-accent/12 font-medium text-accent'
                   : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
@@ -121,7 +145,7 @@ export function PlanSidebar({
       </nav>
 
       {/* --------------------------------------------------------- streak */}
-      <div className="px-3 pb-4">
+      <div className="px-3 pb-4 pb-safe">
         <div className="mb-3 h-px bg-line" />
         <div className="flex items-center gap-2.5 rounded-lg bg-surface-2 px-3 py-2.5">
           <Flame
@@ -130,9 +154,7 @@ export function PlanSidebar({
           />
           <div className="min-w-0 flex-1">
             <p className="tabular text-sm font-semibold leading-none">{streak}</p>
-            <p className="mt-0.5 text-2xs text-ink-faint">
-              {streak === 1 ? 'day streak' : 'day streak'}
-            </p>
+            <p className="mt-0.5 text-2xs text-ink-faint">day streak</p>
           </div>
         </div>
       </div>
@@ -142,16 +164,19 @@ export function PlanSidebar({
   return (
     <>
       {/* ------------------------------------------------------ mobile bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-bg/90 px-4 backdrop-blur-xl lg:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-line bg-bg/90 px-2 pt-safe backdrop-blur-xl lg:hidden">
         <button
           onClick={() => setOpen(true)}
           aria-label="Open plan navigation"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2"
+          aria-expanded={open}
+          className="flex h-touch w-touch shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2"
         >
           <Menu className="h-5 w-5" />
         </button>
-        <span className="truncate px-2 font-display text-sm font-semibold">{plan.title}</span>
-        <div className="flex items-center gap-1">
+        <span className="min-w-0 flex-1 truncate text-center font-display text-sm font-semibold">
+          {plan.title}
+        </span>
+        <div className="flex shrink-0 items-center gap-0.5">
           <ThemeToggle />
           <UserMenu {...user} />
         </div>
@@ -159,12 +184,20 @@ export function PlanSidebar({
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-line bg-surface animate-scale-in">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in"
+            onClick={() => setOpen(false)}
+          />
+          <aside
+            className="absolute inset-y-0 left-0 flex w-[min(17rem,85vw)] flex-col border-r border-line bg-surface pt-safe animate-slide-in-left"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Plan navigation"
+          >
             <button
               onClick={() => setOpen(false)}
               aria-label="Close navigation"
-              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2"
+              className="absolute right-2 top-2 flex h-touch w-touch items-center justify-center rounded-lg text-ink-muted hover:bg-surface-2"
             >
               <X className="h-4 w-4" />
             </button>
@@ -172,6 +205,39 @@ export function PlanSidebar({
           </aside>
         </div>
       )}
+
+      {/* -------------------------------------------------- mobile tab bar */}
+      {/*
+        A drawer alone means every navigation on a phone costs two taps and a
+        wait for an animation. The daily surfaces get thumb-reachable tabs;
+        the drawer stays for everything else.
+      */}
+      <nav
+        aria-label="Plan sections"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-tabbar items-stretch border-t border-line bg-bg/95 pb-safe backdrop-blur-xl lg:hidden"
+      >
+        {TAB_BAR.map((slug) => {
+          const entry = NAV.find((n) => n.slug === slug)!;
+          const href = `/plan/${plan.id}/${slug}`;
+          const active = pathname === href;
+          const Icon = entry.icon;
+
+          return (
+            <Link
+              key={slug}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex flex-1 flex-col items-center justify-center gap-1 text-2xs font-medium transition-colors',
+                active ? 'text-accent' : 'text-ink-faint hover:text-ink-muted',
+              )}
+            >
+              <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+              {entry.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* ----------------------------------------------------- desktop rail */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-sidebar flex-col border-r border-line bg-surface/60 backdrop-blur-sm lg:flex">

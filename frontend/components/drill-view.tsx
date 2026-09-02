@@ -125,7 +125,7 @@ export function DrillView({
 
     return (
       <div className="animate-in">
-        <Card raised className="rounded-panel p-8 text-center">
+        <Card raised className="rounded-panel p-6 text-center sm:p-8">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-success/12 text-success">
             <TrendingUp className="h-6 w-6" />
           </div>
@@ -186,7 +186,7 @@ export function DrillView({
 
         <Progress value={((index) / cards.length) * 100} className="mb-7" />
 
-        <Card raised className="rounded-panel p-7">
+        <Card raised className="rounded-panel p-5 sm:p-7">
           <div className="flex items-center gap-2">
             {card.isReview ? <Badge tone="info">Review</Badge> : <Badge tone="accent">New</Badge>}
             <span className="text-2xs uppercase tracking-wider text-ink-faint">
@@ -195,7 +195,7 @@ export function DrillView({
             </span>
           </div>
 
-          <p className="mt-5 whitespace-pre-wrap text-lg leading-relaxed">{card.stem}</p>
+          <p className="mt-5 whitespace-pre-wrap text-base leading-relaxed sm:text-lg">{card.stem}</p>
 
           {/* ---------------------------------------------------- options */}
           {card.kind === 'mcq' && card.options.length > 0 && (
@@ -209,7 +209,7 @@ export function DrillView({
                     disabled={revealed}
                     onClick={() => { setSelected(option); setRevealed(true); }}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-all',
+                      'flex min-h-touch w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left text-sm transition-all sm:px-4',
                       !revealed && 'border-line bg-surface-2 hover:border-accent/40',
                       revealed && correct && 'border-success bg-success/10',
                       revealed && chosen && !correct && 'border-danger bg-danger/10',
@@ -265,13 +265,13 @@ export function DrillView({
 
               <div className="mt-6">
                 <p className="mb-2.5 text-xs text-ink-muted">How well did you know it?</p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2 xs:grid-cols-4">
                   {GRADES.map((g) => (
                     <button
                       key={g.value}
                       onClick={() => grade(g.value)}
                       className={cn(
-                        'rounded-xl border bg-surface-2 px-2 py-3 text-center transition-colors',
+                        'min-h-touch rounded-xl border bg-surface-2 px-2 py-3 text-center transition-colors',
                         g.className,
                       )}
                     >
@@ -292,13 +292,13 @@ export function DrillView({
 
   return (
     <div className="animate-in">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">Drill</h1>
+      <h1 className="font-display text-fluid-h2 font-semibold">Drill</h1>
       <p className="mt-1.5 text-sm text-ink-muted">
         Recall practice on what you have already studied, scheduled by spaced repetition.
       </p>
 
       {dueCount > 0 && (
-        <Card className="mt-7 border-accent/30 bg-accent/[0.06] p-5">
+        <Card className="mt-7 border-accent/30 bg-accent/[0.06] p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
@@ -338,14 +338,14 @@ export function DrillView({
             <Card
               key={topic.id}
               className={cn(
-                'flex items-center gap-3 p-4 transition-colors',
+                'flex flex-wrap items-center gap-x-3 gap-y-3 p-4 transition-colors',
                 topic.taught ? 'hover:border-accent/30' : 'opacity-55',
               )}
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{topic.title}</p>
+              <div className="min-w-0 flex-1 basis-full sm:basis-auto">
+                <p className="text-sm font-medium">{topic.title}</p>
                 <div className="mt-1.5 flex items-center gap-2.5">
-                  <Progress value={topic.mastery} className="max-w-[120px]" tone={topic.mastery >= 70 ? 'success' : 'accent'} />
+                  <Progress value={topic.mastery} className="max-w-[7.5rem]" tone={topic.mastery >= 70 ? 'success' : 'accent'} />
                   <span className="tabular text-2xs text-ink-faint">
                     {topic.mastery}% mastery
                     {topic.questionCount > 0 && ` · ${topic.questionCount} cards`}

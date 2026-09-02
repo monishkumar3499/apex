@@ -145,12 +145,75 @@ describe('buildSchedule', () => {
 
   it('schedules no new material on catch-up days', () => {
     const result = buildSchedule(input({ startDate: '2026-01-05', targetDate: '2026-06-05' }));
-    const catchUps = result.sessions.filter((s) => s.items.some((i) => i.kind === 'buffer'));
 
-    expect(catchUps.length).toBeGreaterThan(0);
-    for (const session of catchUps) {
+    // Checked against the reported catch-up days rather than against "has a
+    // buffer item": day one also carries a buffer item (the orientation win)
+    // and does teach new material, so the item kind is not the invariant.
+    expect(result.catchUpDays.length).toBeGreaterThan(0);
+
+    const catchUpSet = new Set(result.catchUpDays);
+    const catchUpSessions = result.sessions.filter((s) => catchUpSet.has(s.dayIndex));
+    expect(catchUpSessions.length).toBeGreaterThan(0);
+
+    for (const session of catchUpSessions) {
       expect(session.items.some((i) => i.kind === 'learn')).toBe(false);
+      expect(session.items.some((i) => i.kind === 'buffer')).toBe(true);
     }
+  });
+
+  it('opens day one with a short, finishable win before any new material', () => {
+    const result = buildSchedule(input({ topics: topics(20) }));
+    const firstDay = result.sessions[0];
+
+    const orientation = firstDay.items[0];
+    expect(orientation.kind).toBe('buffer');
+    expect(orientation.estMinutes).toBeLessThanOrEqual(10);
+    // It must come first: the point is succeeding before meeting a hard idea.
+    const firstLearn = firstDay.items.findIndex((i) => i.kind === 'learn');
+    if (firstLearn !== -1) expect(firstLearn).toBeGreaterThan(0);
+  });
+
+  it('gives harder topics shorter blocks, at the same total time', () => {
+    const blocksFor = (difficulty: number) => {
+      const result = buildSchedule(
+        input({ topics: topics(12, () => ({ difficulty, estMinutes: 120 })) }),
+      );
+      return result.sessions
+        .flatMap((s) => s.items)
+        .filter((i) => i.kind === 'learn')
+        .map((i) => i.estMinutes);
+    };
+
+    const easy = blocksFor(1);
+    const hard = blocksFor(5);
+
+    expect(Math.max(...hard)).toBeLessThan(Math.max(...easy));
+    // Shorter blocks, not less material.
+    expect(hard.length).toBeGreaterThan(easy.length);
+  });
+
+  it('never opens more than three new topics on one day', () => {
+    // A generous weekend is where overload happens: 240 minutes of capacity
+    // would otherwise start five unrelated concepts in a row.
+    const result = buildSchedule(
+      input({ topics: topics(40, () => ({ estMinutes: 30, difficulty: 1 })), weekendMinutes: 480 }),
+    );
+
+    const opened = new Map<number, Set<number>>();
+    const seen = new Set<number>();
+
+    for (const session of result.sessions) {
+      for (const item of session.items) {
+        if (item.kind !== 'learn' || item.topicIdx === null) continue;
+        if (seen.has(item.topicIdx)) continue;
+        seen.add(item.topicIdx);
+        const set = opened.get(session.dayIndex) ?? new Set<number>();
+        set.add(item.topicIdx);
+        opened.set(session.dayIndex, set);
+      }
+    }
+
+    for (const [, set] of opened) expect(set.size).toBeLessThanOrEqual(3);
   });
 
   it('gives exam prep more practice than skill prep', () => {

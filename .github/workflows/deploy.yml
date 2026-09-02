@@ -65,21 +65,14 @@ jobs:
       - name: Deploy on EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          # NEXT_PUBLIC_* are compiled into the browser bundle, so they have to
-          # be present at `docker build` time. Passing them only through
-          # --env-file at run time ships a bundle with `undefined` credentials
-          # and sign-in fails with no server-side error to find.
-          #
-          # Both values are public by design (the anon key is protected by RLS),
-          # but they live in secrets so the Supabase project is not pinned into
-          # the workflow file.
+          ENV_FILE: ${{ secrets.ENV_FILE }}
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: SUPABASE_URL,SUPABASE_ANON_KEY
+          envs: ENV_FILE,SUPABASE_URL,SUPABASE_ANON_KEY
           script: |
             set -euo pipefail
 
@@ -87,6 +80,13 @@ jobs:
 
             git fetch origin ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
+
+            # If ENV_FILE is provided via GitHub Secrets, write it securely
+            if [ -n "${ENV_FILE:-}" ]; then
+              printf '%s\n' "$ENV_FILE" > frontend/.env
+              chmod 600 frontend/.env
+              echo "Synced frontend/.env securely from GitHub Secrets."
+            fi
 
             # Fall back to the values already in frontend/.env on the host, so a
             # deploy still works before the repository secrets are populated.

@@ -83,7 +83,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd ~/apex/apex
+            cd ~/apex
 
             git fetch origin ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}

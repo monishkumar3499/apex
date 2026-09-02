@@ -80,7 +80,8 @@ export function resolveOrigin(
   const forwardedProto = firstHeaderValue(headers.get('x-forwarded-proto'));
 
   if (forwardedHost) {
-    const local = /^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(forwardedHost);
+    const isIp = /^(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?$/i.test(forwardedHost);
+    const local = isIp || /^(?:localhost|\[::1\])(?::\d+)?$/i.test(forwardedHost);
     const proto = forwardedProto || (local ? 'http' : 'https');
     const candidate = normaliseOrigin(`${proto}://${forwardedHost}`);
     if (candidate) return candidate;

@@ -118,6 +118,11 @@ describe('resolveOrigin', () => {
     expect(origin).toBe('http://localhost:3000');
   });
 
+  it('stays on http for raw IP hosts when no proto header is provided', () => {
+    const origin = resolveOrigin(req('http://18.61.67.223:3000/auth/callback', { host: '18.61.67.223:3000' }), {});
+    expect(origin).toBe('http://18.61.67.223:3000');
+  });
+
   it('ignores a malformed APP_ORIGIN rather than crashing the callback', () => {
     const origin = resolveOrigin(req('http://localhost:3000/auth/callback', { host: 'localhost:3000' }), {
       APP_ORIGIN: 'not a url',

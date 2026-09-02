@@ -123,7 +123,7 @@ export function CoachChat({
   // composer started life below the fold. The subtraction also has to clear the
   // mobile tab bar, which vh knows nothing about.
   return (
-    <div className="flex h-[calc(100dvh-13rem)] flex-col sm:h-[calc(100dvh-14rem)] lg:h-[calc(100dvh-6rem)]">
+    <div className="flex h-[calc(100dvh-13rem)] flex-col sm:h-[calc(100dvh-14rem)] md:h-[calc(100dvh-6rem)]">
       <div className="flex-1 overflow-y-auto pb-4">
         <div className="space-y-6">
           {visible.map((message) => (

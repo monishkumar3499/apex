@@ -299,7 +299,7 @@ export function DrillView({
 
       {dueCount > 0 && (
         <Card className="mt-7 border-accent/30 bg-accent/[0.06] p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-3">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/15 text-accent">
                 <Sparkles className="h-4.5 w-4.5" />
@@ -313,7 +313,7 @@ export function DrillView({
                 </p>
               </div>
             </div>
-            <Button onClick={() => start(null)} loading={loading && activeTopic === null}>
+            <Button onClick={() => start(null)} loading={loading && activeTopic === null} className="w-full sm:w-auto shrink-0">
               <Play className="h-4 w-4" />
               Start review
             </Button>

@@ -3,7 +3,7 @@ import {
   Compass, ArrowRight, CalendarDays, Library, Brain, LineChart, Sparkles,
   ShieldCheck, Repeat, Layers, Timer, Check,
 } from 'lucide-react';
-import { ThemeToggle } from '../components/theme';
+import { LandingNav } from '../components/landing-nav';
 import { Badge } from '../components/ui';
 
 const SURFACES = [
@@ -60,34 +60,7 @@ const PRINCIPLES = [
 export default function LandingPage() {
   return (
     <div className="min-h-dvh">
-      {/* ------------------------------------------------------------ nav */}
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-bg/85 pt-safe backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-5">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-fg">
-              <Compass className="h-4.5 w-4.5" strokeWidth={2.5} />
-            </div>
-            <span className="font-display text-base font-semibold tracking-tight">APEX</span>
-          </Link>
-
-          <nav className="hidden items-center gap-7 text-sm text-ink-muted md:flex">
-            <a href="#how" className="transition-colors hover:text-ink">How it works</a>
-            <a href="#surfaces" className="transition-colors hover:text-ink">The app</a>
-            <a href="#why" className="transition-colors hover:text-ink">Why it holds up</a>
-          </nav>
-
-          <div className="flex items-center gap-1.5">
-            <ThemeToggle />
-            <Link
-              href="/app"
-              className="inline-flex h-touch shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-accent px-3.5 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover sm:px-4"
-            >
-              Start free
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingNav />
 
       <main>
         {/* --------------------------------------------------------- hero */}

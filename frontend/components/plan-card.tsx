@@ -81,7 +81,7 @@ export function PlanCard({
                 </span>
               </div>
 
-              <h3 className="mt-3 truncate font-display text-base font-semibold">{plan.title}</h3>
+              <h3 className="mt-3 line-clamp-2 font-display text-base font-semibold leading-snug">{plan.title}</h3>
 
               <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
                 <CalendarClock className="h-3.5 w-3.5" />

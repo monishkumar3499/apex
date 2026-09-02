@@ -24,12 +24,16 @@ export default async function TodayPage({ params }: Props) {
 
   const { data: plan } = await db
     .from('plans')
-    .select('id, title, start_date, target_date')
+    .select('id, title, start_date, target_date, status')
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
 
   if (!plan) redirect('/app');
+
+  if (plan.status === 'building' || plan.status === 'failed') {
+    redirect(`/plan/${id}/building`);
+  }
 
   // Today's session, or the next one if today is a rest day.
   const { data: session } = await db

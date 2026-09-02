@@ -128,8 +128,8 @@ export function PlanMap({
                     <p className="mt-1 line-clamp-1 text-xs text-ink-muted">{unit.summary}</p>
                   )}
 
-                  <div className="mt-2.5 flex items-center gap-3">
-                    <Progress value={unitProgress} className="max-w-[180px]" />
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2 sm:gap-3">
+                    <Progress value={unitProgress} className="w-full sm:max-w-[180px]" />
                     <span className="tabular text-2xs text-ink-faint">
                       {unit.topics.length} topics · mastery {mastery}%
                     </span>

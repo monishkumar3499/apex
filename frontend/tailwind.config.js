@@ -59,7 +59,7 @@ module.exports = {
          * to 48px at exactly 640px looks broken on every width in between, and
          * there are a lot of those between a 360px phone and a 1440px laptop.
          */
-        'fluid-hero': ['clamp(1.875rem, 1.1rem + 3.6vw, 3.4rem)', { lineHeight: '1.08', letterSpacing: '-0.02em' }],
+        'fluid-hero': ['clamp(1.5rem, 1.05rem + 2vw, 3rem)', { lineHeight: '1.12', letterSpacing: '-0.02em' }],
         'fluid-h2': ['clamp(1.375rem, 1.05rem + 1.5vw, 2.25rem)', { lineHeight: '1.15', letterSpacing: '-0.015em' }],
         'fluid-h3': ['clamp(1.125rem, 1rem + 0.6vw, 1.5rem)', { lineHeight: '1.25' }],
       },

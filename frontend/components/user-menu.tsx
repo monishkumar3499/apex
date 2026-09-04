@@ -1,8 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import { LogOut, User as UserIcon, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
 import { supabaseBrowser } from '../lib/supabase/client';
+import {
+  Avatar,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from './ui';
 import { cn } from '../lib/utils';
 
 export function UserMenu({
@@ -14,25 +24,7 @@ export function UserMenu({
   email: string | null;
   avatarUrl: string | null;
 }) {
-  const [open, setOpen] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: Event) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    // `pointerdown` also covers touch, which `mousedown` alone misses on some
-    // mobile browsers — the menu then stayed open behind the next tap.
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
 
   /**
    * Clear the session on both sides.
@@ -59,58 +51,53 @@ export function UserMenu({
     window.location.href = '/';
   };
 
-  const initials = (name ?? email ?? 'A')
-    .split(/[\s@.]/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase())
-    .join('');
-
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label="Account menu"
-        className={cn(
-          'flex h-9 w-9 items-center justify-center overflow-hidden rounded-full',
-          'bg-surface-3 text-2xs font-semibold text-ink-muted',
-          'ring-2 ring-transparent transition-all hover:ring-accent/30',
-        )}
-      >
-        {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-        ) : (
-          initials || <UserIcon className="h-4 w-4" />
-        )}
-      </button>
-
-      {open && (
-        <div
-          role="menu"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="Account menu"
           className={cn(
-            'surface-raised absolute right-0 top-11 z-50 overflow-hidden rounded-xl animate-scale-in',
-            // Never wider than the viewport on a 320px phone.
-            'w-[min(14rem,calc(100vw-2rem))]',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
+            'outline-none ring-2 ring-transparent transition-all',
+            'hover:ring-accent/30 focus-visible:ring-accent/60 data-[state=open]:ring-accent/40',
           )}
         >
-          <div className="border-b border-line px-3.5 py-3">
-            <p className="truncate text-sm font-medium">{name ?? 'Learner'}</p>
-            {email && <p className="truncate text-xs text-ink-muted">{email}</p>}
-          </div>
-          <button
-            role="menuitem"
-            onClick={signOut}
-            disabled={signingOut}
-            className="flex min-h-touch w-full items-center gap-2.5 px-3.5 py-3 text-sm text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-60"
-          >
-            {signingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-            {signingOut ? 'Signing out…' : 'Sign out'}
-          </button>
-        </div>
-      )}
-    </div>
+          <Avatar src={avatarUrl} name={name} email={email} />
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent className="w-[min(15rem,calc(100vw-1.5rem))]">
+        <DropdownMenuLabel className="flex items-center gap-2.5">
+          <Avatar src={avatarUrl} name={name} email={email} className="h-8 w-8" />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-ink">{name ?? 'Learner'}</span>
+            {email && <span className="block truncate text-xs text-ink-muted">{email}</span>}
+          </span>
+        </DropdownMenuLabel>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link href="/app">
+            <LayoutGrid />
+            All plans
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          tone="danger"
+          disabled={signingOut}
+          // Radix closes the menu on select by default, which would unmount
+          // the item mid-request and lose the spinner.
+          onSelect={(event) => {
+            event.preventDefault();
+            void signOut();
+          }}
+        >
+          {signingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

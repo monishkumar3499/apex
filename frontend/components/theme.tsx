@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Hint } from './ui/tooltip';
 
 type Theme = 'dark' | 'light';
 const STORAGE_KEY = 'apex-theme';
@@ -42,19 +43,41 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggle } = useTheme();
+  const label = `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`;
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-      className={cn(
-        'inline-flex h-touch w-touch items-center justify-center rounded-lg text-ink-muted',
-        'transition-colors hover:bg-surface-2 hover:text-ink',
-        className,
-      )}
-    >
-      {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </button>
+    <Hint label={label}>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={label}
+        className={cn(
+          'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-field text-ink-muted',
+          'outline-none transition-colors hover:bg-surface-2 hover:text-ink',
+          'focus-visible:ring-2 focus-visible:ring-accent/60',
+          className,
+        )}
+      >
+        {/*
+          Both glyphs are rendered and cross-faded rather than swapped. A
+          conditional swap remounts the icon, so the button visibly flickers
+          on every toggle — the one interaction where that is most obvious.
+        */}
+        <span className="relative block h-4 w-4">
+          <Sun
+            className={cn(
+              'absolute inset-0 h-4 w-4 transition-all duration-300 ease-out',
+              theme === 'dark' ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-50 opacity-0',
+            )}
+          />
+          <Moon
+            className={cn(
+              'absolute inset-0 h-4 w-4 transition-all duration-300 ease-out',
+              theme === 'dark' ? 'rotate-90 scale-50 opacity-0' : 'rotate-0 scale-100 opacity-100',
+            )}
+          />
+        </span>
+      </button>
+    </Hint>
   );
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Compass } from 'lucide-react';
 import { safeNext } from '../../lib/auth-url';
 import { ThemeToggle } from '../../components/theme';
+import { FadeIn } from '../../components/ui';
 import { LoginForm } from './login-form';
 
 /**
@@ -31,25 +32,35 @@ export default async function LoginPage({
   const error = first(params.error)?.trim() || null;
 
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-20">
+    <main
+      id="main"
+      // `py-24` clears the absolutely positioned header. On a short landscape
+      // viewport the whole thing scrolls rather than the panel being clipped.
+      className="relative flex min-h-dvh flex-col items-center justify-center px-4 py-24"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_100%_at_50%_0%,rgb(var(--accent)/0.10),transparent_70%)]"
       />
 
       <header className="absolute inset-x-0 top-0 flex items-center justify-between p-4 pt-safe sm:p-5">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-fg">
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-4 focus-visible:ring-offset-bg"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-fg">
             <Compass className="h-4.5 w-4.5" strokeWidth={2.5} />
-          </div>
+          </span>
           <span className="font-display text-base font-semibold tracking-tight">APEX</span>
         </Link>
         <ThemeToggle />
       </header>
 
-      <div className="surface-raised relative w-full max-w-sm rounded-panel p-6 animate-in sm:p-8">
-        <LoginForm next={next} initialError={error} />
-      </div>
+      <FadeIn className="relative w-full max-w-sm">
+        <div className="surface-raised rounded-panel p-6 sm:p-8">
+          <LoginForm next={next} initialError={error} />
+        </div>
+      </FadeIn>
     </main>
   );
 }

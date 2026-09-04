@@ -3,6 +3,8 @@ import { Outfit, Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import './globals.css';
 import { ThemeProvider, themeScript } from '../components/theme';
+import { MotionProvider } from '../components/ui/motion';
+import { TooltipProvider } from '../components/ui/tooltip';
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' });
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
@@ -44,19 +46,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen bg-bg font-sans text-ink antialiased">
+        {/*
+          A skip link is the cheapest real accessibility win available: without
+          it, a keyboard user landing on the plan workspace tabs through the
+          entire sidebar on every navigation before reaching the content.
+        */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-accent focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-accent-fg focus:shadow-e3"
+        >
+          Skip to content
+        </a>
+
         <ThemeProvider>
-          {children}
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              className: 'surface-raised !rounded-xl !text-sm',
-              style: {
-                background: 'rgb(var(--surface))',
-                color: 'rgb(var(--text))',
-                border: '1px solid rgb(var(--border))',
-              },
-            }}
-          />
+          <MotionProvider>
+            {/*
+              `delayDuration` is long enough that a pointer crossing the screen
+              does not trail a wake of tooltips behind it.
+            */}
+            <TooltipProvider delayDuration={350} skipDelayDuration={200}>
+              {children}
+              <Toaster
+                position="bottom-center"
+                // Toasts must clear the mobile tab bar and the home indicator,
+                // or the confirmation of the thing you just did covers the
+                // navigation you would use next.
+                offset={16}
+                mobileOffset={{ bottom: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))' }}
+                toastOptions={{
+                  className: 'surface-raised !rounded-xl !text-sm',
+                  style: {
+                    background: 'rgb(var(--surface))',
+                    color: 'rgb(var(--text))',
+                    border: '1px solid rgb(var(--border))',
+                  },
+                }}
+              />
+            </TooltipProvider>
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

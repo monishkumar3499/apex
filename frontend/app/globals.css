@@ -14,67 +14,72 @@
 
 @layer base {
   :root {
-    --bg:            250 250 249;   /* warm off-white, easier than pure #fff */
-    --bg-subtle:     245 245 244;
-    --surface:       255 255 255;
-    --surface-2:     250 250 249;
-    --surface-3:     245 245 244;
-    --border:        231 229 228;
-    --border-strong: 214 211 209;
+    --bg:              250 250 249;   /* warm off-white, easier than pure #fff */
+    --bg-subtle:       245 245 244;
+    --surface:         255 255 255;
+    --surface-2:       250 250 249;
+    --surface-3:       245 245 244;
+    --surface-sunken:  237 235 233;
+    --border:          231 229 228;
+    --border-strong:   214 211 209;
 
-    --text:          28 25 23;
-    --text-muted:    120 113 108;
-    --text-faint:    168 162 158;
+    --text:            28 25 23;
+    --text-muted:      120 113 108;
+    --text-faint:      168 162 158;
 
-    --accent:        180 83 9;      /* amber-700 — passes AA on white */
-    --accent-hover:  146 64 14;
-    --accent-soft:   254 243 199;
-    --accent-text:   255 255 255;
+    --accent:          180 83 9;      /* amber-700 — passes AA on white */
+    --accent-hover:    146 64 14;
+    --accent-soft:     254 243 199;
+    --accent-text:     255 255 255;
+    /* Graphics only. See the `accent.vivid` note in tailwind.config.js. */
+    --accent-vivid:    217 119 6;
 
-    --success:       4 120 87;
-    --success-soft:  209 250 229;
-    --warn:          180 83 9;
-    --warn-soft:     254 243 199;
-    --danger:        190 18 60;
-    --danger-soft:   255 228 230;
-    --info:          3 105 161;
-    --info-soft:     224 242 254;
+    --success:         4 120 87;
+    --success-soft:    209 250 229;
+    --warn:            180 83 9;
+    --warn-soft:       254 243 199;
+    --danger:          190 18 60;
+    --danger-soft:     255 228 230;
+    --info:            3 105 161;
+    --info-soft:       224 242 254;
 
-    --ring:          180 83 9;
-    --shadow-color:  28 25 23;
+    --ring:            180 83 9;
+    --shadow-color:    28 25 23;
 
     color-scheme: light;
   }
 
   .dark {
-    --bg:            9 12 20;       /* deep navy-black study surface */
-    --bg-subtle:     13 17 27;
-    --surface:       17 23 38;
-    --surface-2:     22 30 48;
-    --surface-3:     29 39 61;
-    --border:        33 44 68;
-    --border-strong: 51 65 95;
+    --bg:              9 12 20;       /* deep navy-black study surface */
+    --bg-subtle:       13 17 27;
+    --surface:         17 23 38;
+    --surface-2:       22 30 48;
+    --surface-3:       29 39 61;
+    --surface-sunken:  13 18 30;
+    --border:          33 44 68;
+    --border-strong:   51 65 95;
 
-    --text:          232 237 246;
-    --text-muted:    139 152 176;
-    --text-faint:    98 110 134;
+    --text:            232 237 246;
+    --text-muted:      139 152 176;
+    --text-faint:      98 110 134;
 
-    --accent:        245 165 36;    /* amber — the single point of warmth */
-    --accent-hover:  255 190 84;
-    --accent-soft:   58 41 11;
-    --accent-text:   14 18 28;
+    --accent:          245 165 36;    /* amber — the single point of warmth */
+    --accent-hover:    255 190 84;
+    --accent-soft:     58 41 11;
+    --accent-text:     14 18 28;
+    --accent-vivid:    250 180 60;
 
-    --success:       52 211 153;
-    --success-soft:  6 44 36;
-    --warn:          251 191 36;
-    --warn-soft:     56 38 6;
-    --danger:        251 113 133;
-    --danger-soft:   60 15 27;
-    --info:          56 189 248;
-    --info-soft:     8 40 58;
+    --success:         52 211 153;
+    --success-soft:    6 44 36;
+    --warn:            251 191 36;
+    --warn-soft:       56 38 6;
+    --danger:          251 113 133;
+    --danger-soft:     60 15 27;
+    --info:            56 189 248;
+    --info-soft:       8 40 58;
 
-    --ring:          245 165 36;
-    --shadow-color:  0 0 0;
+    --ring:            245 165 36;
+    --shadow-color:    0 0 0;
 
     color-scheme: dark;
   }
@@ -139,6 +144,12 @@
     outline-offset: 2px;
   }
 
+  /* Radix scroll-locks the body by setting overflow on <html>; without this
+     the page visibly jumps by the scrollbar width when a dialog opens. */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
+
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
@@ -199,13 +210,62 @@
   .hairline {
     background-image: linear-gradient(to right, transparent, rgb(var(--border)), transparent);
   }
+
+  /* ------------------------------------------------------------------
+     The spine
+
+     APEX's one signature graphic: a vertical rail with nodes on it, used
+     wherever the product shows an ordered route through time — today's
+     items, the build stages, the intake steps, the landing hero.
+
+     It is drawn as a background on the list container rather than as a
+     per-row pseudo-element, so the rail is continuous and does not break
+     across gaps between rows.
+     ------------------------------------------------------------------ */
+  .spine {
+    position: relative;
+  }
+
+  .spine::before {
+    content: '';
+    position: absolute;
+    left: var(--spine-x, 0.9375rem);
+    top: var(--spine-top, 1.25rem);
+    bottom: var(--spine-bottom, 1.25rem);
+    width: 2px;
+    border-radius: 999px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--border-strong)) 8%,
+      rgb(var(--border-strong)) 92%,
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  /* The build screen's rail, with a highlight travelling down it. */
+  .spine-live::after {
+    content: '';
+    position: absolute;
+    left: var(--spine-x, 0.9375rem);
+    top: var(--spine-top, 1.25rem);
+    width: 2px;
+    height: 25%;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, transparent, rgb(var(--accent-vivid)), transparent);
+    animation: spine-travel 2.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* A node sitting on the rail. Opaque, so the rail passes behind it. */
+  .spine-node {
+    background-color: rgb(var(--bg));
+    box-shadow: 0 0 0 4px rgb(var(--bg));
+  }
 }
 
 @layer utilities {
-  .animate-in {
-    animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
   /* ------------------------------------------------------------------
      Safe areas
 
@@ -239,6 +299,13 @@
      which on mobile Safari triggers pull-to-refresh mid-scroll. */
   .no-chain { overscroll-behavior: contain; }
 
+  /* Fades the right edge of a horizontal scroller, so a row of chips reads
+     as "there is more" rather than as an arbitrary crop. */
+  .scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+  }
+
   .shimmer {
     background: linear-gradient(
       90deg,
@@ -249,11 +316,6 @@
     background-size: 200% 100%;
     animation: shimmer 1.6s linear infinite;
   }
-}
-
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
 }
 
 @keyframes shimmer {

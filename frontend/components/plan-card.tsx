@@ -4,8 +4,13 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { MoreHorizontal, Trash2, Loader2, AlertTriangle, CalendarClock } from 'lucide-react';
-import { Card, Badge, Progress, Modal, Button } from './ui';
+import {
+  MoreHorizontal, Trash2, Loader2, AlertTriangle, CalendarClock, ArrowUpRight, CheckCircle2,
+} from 'lucide-react';
+import {
+  Card, Badge, Progress, Button, ConfirmDialog,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+} from './ui';
 import { cn, formatDate, pct } from '../lib/utils';
 
 export interface PlanSummary {
@@ -28,6 +33,12 @@ const STATUS: Record<string, { label: string; tone: string }> = {
   draft: { label: 'Draft', tone: 'muted' },
 };
 
+const TYPE_LABEL: Record<PlanSummary['prep_type'], string> = {
+  exam: 'Exam',
+  hybrid: 'Cert + role',
+  skill: 'Skill',
+};
+
 export function PlanCard({
   plan,
   today,
@@ -36,7 +47,6 @@ export function PlanCard({
   today?: { done: number; total: number };
 }) {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
@@ -47,6 +57,7 @@ export function PlanCard({
   );
 
   const href = plan.status === 'building' ? `/plan/${plan.id}/building` : `/plan/${plan.id}/today`;
+  const todayDone = today && today.total > 0 && today.done >= today.total;
 
   const remove = async () => {
     setDeleting(true);
@@ -66,103 +77,142 @@ export function PlanCard({
 
   return (
     <>
-      <Card className="group relative overflow-hidden transition-all duration-200 hover:border-accent/30 hover:shadow-sm">
-        <Link href={href} className="block p-4 pr-14 sm:p-5 sm:pr-14">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <Badge tone={status.tone}>
-                  {plan.status === 'building' && <Loader2 className="h-2.5 w-2.5 animate-spin" />}
-                  {plan.status === 'failed' && <AlertTriangle className="h-2.5 w-2.5" />}
-                  {status.label}
-                </Badge>
-                <span className="text-2xs font-medium uppercase tracking-wider text-ink-faint">
-                  {plan.prep_type === 'exam' ? 'Exam' : plan.prep_type === 'hybrid' ? 'Cert + role' : 'Skill'}
-                </span>
-              </div>
-
-              <h3 className="mt-3 line-clamp-2 font-display text-base font-semibold leading-snug">{plan.title}</h3>
-
-              <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
-                <CalendarClock className="h-3.5 w-3.5" />
-                {daysLeft > 0
-                  ? `${daysLeft} days left · ${formatDate(plan.target_date, { year: 'numeric' })}`
-                  : `Target passed · ${formatDate(plan.target_date, { year: 'numeric' })}`}
-              </p>
-            </div>
-
-            <span className="tabular shrink-0 font-display text-xl font-semibold text-ink">
-              {progress}
-              <span className="text-sm text-ink-faint">%</span>
-            </span>
-          </div>
-
-          <Progress value={progress} className="mt-4" />
-
-          <div className="mt-3 flex items-center justify-between text-xs">
-            <span className="tabular text-ink-muted">
-              {plan.done_items} / {plan.total_items} items
-            </span>
-
-            {today && today.total > 0 && (
-              <span
-                className={cn(
-                  'font-medium',
-                  today.done >= today.total ? 'text-success' : 'text-accent',
-                )}
-              >
-                {today.done >= today.total
-                  ? 'Today complete'
-                  : `${today.total - today.done} left today`}
-              </span>
-            )}
-          </div>
+      <Card interactive className="group relative flex h-full flex-col overflow-hidden">
+        {/*
+          The whole card is the link, via a stretched overlay rather than by
+          wrapping the card in an <a>. Wrapping would put the options menu
+          button inside the anchor, where a click has to be intercepted and
+          cancelled on every browser — and where a screen reader reads the
+          menu as part of the plan's link text.
+        */}
+        <Link
+          href={href}
+          className="absolute inset-0 z-0 rounded-card outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        >
+          <span className="sr-only">Open {plan.title}</span>
         </Link>
 
-        <div className="absolute right-3 top-3">
-          <button
-            aria-label="Plan options"
-            onClick={(e) => { e.preventDefault(); setMenuOpen((v) => !v); }}
-            /*
-              Reveal-on-hover is fine with a mouse and makes the control
-              unreachable without one: a touch device never fires hover, so
-              on a phone the plan menu simply did not exist. It is now always
-              visible, and only *hidden* until hover where a fine pointer is
-              actually available.
-            */
-            className="flex h-touch w-touch items-center justify-center rounded-lg text-ink-faint transition-all hover:bg-surface-2 hover:text-ink focus-visible:opacity-100 pointer:opacity-0 pointer:group-hover:opacity-100"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+        {/*
+          Only the head reserves room for the options button. Padding the whole
+          card left the progress bar stopping 2rem short of its right edge,
+          which reads as a misalignment rather than as a gutter.
+        */}
+        <div className="pointer-events-none relative z-[1] flex flex-1 flex-col p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2 pr-9">
+            <Badge tone={status.tone}>
+              {plan.status === 'building' && <Loader2 className="animate-spin" />}
+              {plan.status === 'failed' && <AlertTriangle />}
+              {status.label}
+            </Badge>
+            <span className="text-2xs font-medium uppercase tracking-wider text-ink-faint">
+              {TYPE_LABEL[plan.prep_type]}
+            </span>
+          </div>
 
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="surface-raised absolute right-0 top-11 z-20 w-[min(10rem,calc(100vw-3rem))] overflow-hidden rounded-lg animate-scale-in">
-                <button
-                  onClick={() => { setMenuOpen(false); setConfirming(true); }}
-                  className="flex min-h-touch w-full items-center gap-2 px-3 py-2.5 text-sm text-danger transition-colors hover:bg-danger/10"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete plan
-                </button>
-              </div>
-            </>
-          )}
+          <h3 className="mt-3 line-clamp-2 pr-6 font-display text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-accent">
+            {plan.title}
+          </h3>
+
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-muted">
+            <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              {daysLeft > 0
+                ? `${daysLeft} days left · ${formatDate(plan.target_date, { year: 'numeric' })}`
+                : `Target passed · ${formatDate(plan.target_date, { year: 'numeric' })}`}
+            </span>
+          </p>
+
+          {/* Pushes the progress block to the bottom, so cards of differing
+              title lengths still line their bars up across the grid. */}
+          <div className="mt-auto pt-5">
+            <div className="mb-2 flex items-baseline justify-between gap-2">
+              <span className="tabular text-xs text-ink-muted">
+                {plan.done_items} / {plan.total_items} items
+              </span>
+              <span className="tabular font-display text-lg font-semibold leading-none">
+                {progress}
+                <span className="text-xs text-ink-faint">%</span>
+              </span>
+            </div>
+
+            <Progress
+              value={progress}
+              tone={progress === 100 ? 'success' : 'accent'}
+              label={`${plan.title}: ${progress}% complete`}
+            />
+
+            {today && today.total > 0 && (
+              <p
+                className={cn(
+                  'mt-2.5 flex items-center gap-1.5 text-xs font-medium',
+                  todayDone ? 'text-success' : 'text-accent',
+                )}
+              >
+                {todayDone ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Today complete
+                  </>
+                ) : (
+                  <>
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    {today.total - today.done} left today
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Affordance that the card leads somewhere. Fine-pointer only — on
+            touch there is no hover to reveal it, and it would just be noise. */}
+        <ArrowUpRight
+          aria-hidden
+          className="pointer-events-none absolute bottom-4 right-4 z-[1] hidden h-4 w-4 text-ink-faint opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer:block"
+        />
+
+        <div className="absolute right-2.5 top-2.5 z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                aria-label={`Options for ${plan.title}`}
+                className={cn(
+                  'flex h-touch w-touch items-center justify-center rounded-field text-ink-faint',
+                  'outline-none transition-colors hover:bg-surface-2 hover:text-ink',
+                  'focus-visible:ring-2 focus-visible:ring-accent/60',
+                  /*
+                    Reveal-on-hover makes the control unreachable without a
+                    mouse: a touch device never fires hover, so on a phone the
+                    plan menu simply did not exist. It is always visible, and
+                    only hidden until hover where a fine pointer is available.
+                  */
+                  'data-[state=open]:bg-surface-2 data-[state=open]:text-ink',
+                  'pointer:opacity-0 pointer:group-hover:opacity-100 pointer:focus-visible:opacity-100 pointer:data-[state=open]:opacity-100',
+                )}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent>
+              <DropdownMenuItem tone="danger" onSelect={() => setConfirming(true)}>
+                <Trash2 />
+                Delete plan
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </Card>
 
-      <Modal
+      <ConfirmDialog
         open={confirming}
-        onClose={() => setConfirming(false)}
+        onOpenChange={setConfirming}
         title="Delete this plan?"
         description={`"${plan.title}" and everything in it — schedule, resources, drill history and coach conversation — will be permanently removed. This cannot be undone.`}
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setConfirming(false)}>Cancel</Button>
-            <Button variant="danger" onClick={remove} loading={deleting}>Delete permanently</Button>
-          </>
-        }
+        confirmLabel="Delete permanently"
+        onConfirm={remove}
+        loading={deleting}
+        destructive
       />
     </>
   );

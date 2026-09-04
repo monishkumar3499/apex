@@ -38,7 +38,7 @@ export default async function PlanLayout({ children, params }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <div className="flex min-h-dvh flex-col md:flex-row">
       <PlanSidebar
         plan={{
           id: plan.id,
@@ -53,13 +53,21 @@ export default async function PlanLayout({ children, params }: Props) {
         user={{ name: user.name, email: user.email, avatarUrl: user.avatarUrl }}
       />
 
-      <div className="w-full min-w-0 flex-1 md:pl-sidebar">
+      <div className="w-full min-w-0 flex-1 md:pl-sidebar 3xl:pl-sidebar-lg">
         {/*
           `pb-tabsafe` clears the fixed mobile tab bar *and* the iOS home
           indicator, so the last item in a list is never half-covered. On
           desktop there is no bar, so the padding drops back to normal.
+
+          The column grows past 4xl on large monitors. Holding every workspace
+          screen at 56rem left a 34" display two-thirds empty, but an uncapped
+          column runs the map's topic rows out to 150 characters — so it steps
+          once and stops.
         */}
-        <main className="mx-auto w-full max-w-4xl px-4 py-6 pb-tabsafe sm:px-6 sm:py-8 md:px-8 md:py-10 md:pb-16">
+        <main
+          id="main"
+          className="mx-auto w-full max-w-4xl px-4 py-6 pb-tabsafe sm:px-6 sm:py-8 md:px-8 md:py-10 md:pb-16 xl:max-w-5xl 3xl:max-w-6xl"
+        >
           {children}
         </main>
       </div>

@@ -3,10 +3,11 @@
 import * as React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'motion/react';
 import {
   Check, Loader2, AlertTriangle, Compass, RefreshCw, ArrowLeft, ShieldCheck,
 } from 'lucide-react';
-import { Button, Card, Progress } from '../../../../components/ui';
+import { Button, Card, Progress, Spine, SpineNode, FadeIn, EASE } from '../../../../components/ui';
 import { InsightStream } from '../../../../components/insight-stream';
 import { cn } from '../../../../lib/utils';
 
@@ -81,6 +82,7 @@ export default function BuildingPage() {
   const doneCount = STAGES.filter((s) => stageState(s.key) === 'done').length;
   const firstPending = STAGES.findIndex((s) => stageState(s.key) !== 'done');
   const latest = events[events.length - 1];
+  const buildProgress = (doneCount / STAGES.length) * 100;
 
   const retry = async () => {
     setRetrying(true);
@@ -94,48 +96,55 @@ export default function BuildingPage() {
 
   if (failed) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4 py-16 sm:px-5">
-        <Card raised className="w-full max-w-md rounded-panel p-6 text-center animate-in sm:p-8">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-danger/12 text-danger">
-            <AlertTriangle className="h-6 w-6" />
-          </div>
-          <h1 className="font-display text-lg font-semibold sm:text-xl">The build did not finish</h1>
-          <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">{failed}</p>
-          <p className="mt-3 text-xs leading-relaxed text-ink-faint">
-            This is usually a busy model endpoint. APEX tries several models before giving up, so a
-            retry almost always works.
-          </p>
+      <main id="main" className="flex min-h-dvh items-center justify-center px-4 py-16 sm:px-5">
+        <FadeIn className="w-full max-w-md">
+          <Card raised className="rounded-panel p-6 text-center sm:p-8">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/12 text-danger">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <h1 className="font-display text-lg font-semibold tracking-tight sm:text-xl">
+              The build did not finish
+            </h1>
+            <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">{failed}</p>
+            <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+              This is usually a busy model endpoint. APEX tries several models before giving up, so a
+              retry almost always works.
+            </p>
 
-          <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
-            <Link href="/app" className="sm:w-auto">
-              <Button variant="ghost" className="w-full sm:w-auto">
-                <ArrowLeft className="h-4 w-4" />
-                All plans
+            <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
+              <Button asChild variant="ghost" className="w-full sm:w-auto">
+                <Link href="/app">
+                  <ArrowLeft className="h-4 w-4" />
+                  All plans
+                </Link>
               </Button>
-            </Link>
-            <Button onClick={retry} loading={retrying} className="w-full sm:w-auto">
-              <RefreshCw className="h-4 w-4" />
-              Try again
-            </Button>
-          </div>
-        </Card>
-      </div>
+              <Button onClick={retry} loading={retrying} className="w-full sm:w-auto">
+                <RefreshCw className="h-4 w-4" />
+                Try again
+              </Button>
+            </div>
+          </Card>
+        </FadeIn>
+      </main>
     );
   }
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center px-4 py-12 sm:px-5 sm:py-16">
+    <main
+      id="main"
+      className="relative flex min-h-dvh items-center justify-center px-4 py-10 sm:px-5 sm:py-16"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(55%_70%_at_50%_0%,rgb(var(--accent)/0.10),transparent_72%)]"
       />
 
-      <div className="relative w-full max-w-lg animate-in">
+      <FadeIn className="relative w-full max-w-lg">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-accent text-accent-fg animate-pulse-ring">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-fg animate-pulse-ring">
             <Compass className="h-6 w-6" strokeWidth={2.5} />
           </div>
-          <h1 className="mt-6 font-display text-xl font-semibold tracking-tight sm:text-2xl">
+          <h1 className="mt-6 font-display text-fluid-h3 font-semibold tracking-tight">
             Building your prep map
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-muted">
@@ -144,66 +153,83 @@ export default function BuildingPage() {
         </div>
 
         <div className="mt-7">
-          <Progress value={(doneCount / STAGES.length) * 100} />
+          <Progress value={buildProgress} label="Build progress" />
           <div className="mt-2 flex items-center justify-between text-2xs text-ink-faint">
-            <span>
+            <span aria-live="polite">
               {doneCount} of {STAGES.length} stages
             </span>
             <span className="tabular">{formatElapsed(elapsed)}</span>
           </div>
         </div>
 
-        <Card raised className="mt-5 rounded-panel p-4 sm:p-6">
-          <ol className="space-y-1">
-            {STAGES.map((stage, index) => {
-              const state = index === firstPending && events.length > 0 ? 'active' : stageState(stage.key);
-              const event = [...events].reverse().find((e) => e.stage === stage.key);
+        <Card raised className="mt-5 rounded-panel p-4 sm:p-5">
+          {/*
+            The same spine that carries the day on Today, carrying the build
+            here — with a highlight travelling down the rail while work is
+            still in flight, so a stage that takes twenty seconds still looks
+            like something is happening.
+          */}
+          <Spine
+            x="1.0625rem"
+            live={doneCount < STAGES.length}
+            inset={{ top: '1.75rem', bottom: '1.75rem' }}
+          >
+            <ol className="space-y-1">
+              {STAGES.map((stage, index) => {
+                const state = index === firstPending && events.length > 0 ? 'active' : stageState(stage.key);
+                const event = [...events].reverse().find((e) => e.stage === stage.key);
 
-              return (
-                <li
-                  key={stage.key}
-                  className={cn(
-                    'flex gap-3 rounded-lg px-2.5 py-2.5 transition-colors sm:px-3',
-                    state === 'active' && 'bg-accent/[0.07]',
-                  )}
-                >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
-                    {state === 'done' ? (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15 text-success">
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                      </span>
-                    ) : state === 'active' ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-accent" />
-                    ) : state === 'error' ? (
-                      <AlertTriangle className="h-4 w-4 text-danger" />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-line-strong" />
+                return (
+                  <li
+                    key={stage.key}
+                    className={cn(
+                      'flex items-start gap-3 rounded-lg py-1.5 pr-2 transition-colors',
+                      state === 'active' && 'bg-accent/[0.06]',
                     )}
-                  </span>
-
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        'text-sm transition-colors',
-                        state === 'pending' ? 'text-ink-faint' : 'font-medium text-ink',
+                  >
+                    <SpineNode state={state} size="sm">
+                      {state === 'done' ? (
+                        <motion.span
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                        >
+                          <Check className="h-3 w-3" strokeWidth={3} />
+                        </motion.span>
+                      ) : state === 'active' ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : state === 'error' ? (
+                        <AlertTriangle className="h-3 w-3" />
+                      ) : (
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
                       )}
-                    >
-                      {stage.label}
-                    </p>
-                    <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
-                      {event?.message ?? stage.hint}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+                    </SpineNode>
+
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p
+                        className={cn(
+                          'text-sm transition-colors',
+                          state === 'pending' ? 'text-ink-faint' : 'font-medium text-ink',
+                        )}
+                      >
+                        {stage.label}
+                      </p>
+                      <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">
+                        {event?.message ?? stage.hint}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </Spine>
 
           {latest?.meta && Object.keys(latest.meta).length > 0 && <BuildStats meta={latest.meta} />}
         </Card>
 
-        {/* The wait, made worth having. */}
-        <InsightStream className="mt-5" />
+        {/* The wait, made worth having. Hidden on a short landscape viewport,
+            where it would push the stage list itself off the screen. */}
+        <InsightStream className="mt-5 h-sm:hidden" />
 
         <p className="mt-4 flex items-start justify-center gap-1.5 px-2 text-center text-2xs leading-relaxed text-ink-faint">
           <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0" />
@@ -212,8 +238,8 @@ export default function BuildingPage() {
             plan was written by a model.
           </span>
         </p>
-      </div>
-    </div>
+      </FadeIn>
+    </main>
   );
 }
 
@@ -240,13 +266,18 @@ function BuildStats({ meta }: { meta: Record<string, unknown> }) {
   if (!fields.length) return null;
 
   return (
-    <div className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-5 sm:grid-cols-4">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: EASE }}
+      className="mt-5 grid grid-cols-2 gap-3 border-t border-line pt-5 sm:grid-cols-4"
+    >
       {fields.map(([label, value]) => (
         <div key={label}>
           <p className="tabular font-display text-lg font-semibold">{value}</p>
           <p className="text-2xs uppercase tracking-wider text-ink-faint">{label}</p>
         </div>
       ))}
-    </div>
+    </motion.div>
   );
 }

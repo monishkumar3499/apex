@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Mail, ArrowRight, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { supabaseBrowser, supabaseConfigured } from '../../lib/supabase/client';
-import { Button } from '../../components/ui';
+import { Button, Input, Label, Separator, Callout } from '../../components/ui';
 
 function GoogleMark() {
   return (
@@ -88,23 +88,20 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
   if (sent) {
     return (
       <div className="text-center">
-        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-success/12 text-success">
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-success/12 text-success">
           <CheckCircle2 className="h-6 w-6" />
         </div>
-        <h1 className="font-display text-xl font-semibold">Check your inbox</h1>
+        <h1 className="font-display text-xl font-semibold tracking-tight">Check your inbox</h1>
         <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-ink-muted">
-          We sent a sign-in link to <span className="break-all font-medium text-ink">{email}</span>. It
-          expires in an hour.
+          We sent a sign-in link to <span className="break-all font-medium text-ink">{email}</span>.
+          It expires in an hour.
         </p>
         <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-ink-faint">
           Open it in this browser — the link is tied to the session that requested it.
         </p>
-        <button
-          onClick={() => setSent(false)}
-          className="mt-6 min-h-touch text-sm font-medium text-accent hover:underline"
-        >
+        <Button variant="link" className="mt-5" onClick={() => setSent(false)}>
           Use a different email
-        </button>
+        </Button>
       </div>
     );
   }
@@ -117,13 +114,10 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
       </div>
 
       {!configured && (
-        <p
-          role="alert"
-          className="mt-6 rounded-xl border border-danger/25 bg-danger/10 px-3.5 py-3 text-sm leading-relaxed text-danger"
-        >
+        <Callout tone="danger" className="mt-6" icon={<AlertTriangle />}>
           This build is missing its public Supabase credentials, so sign-in cannot run. They are
           inlined at build time — pass them as Docker build args.
-        </p>
+        </Callout>
       )}
 
       <Button
@@ -139,27 +133,37 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
       </Button>
 
       <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-line" />
+        <Separator className="flex-1" />
         <span className="text-2xs font-medium uppercase tracking-wider text-ink-faint">or</span>
-        <div className="h-px flex-1 bg-line" />
+        <Separator className="flex-1" />
       </div>
 
       <form onSubmit={signInWithEmail} className="space-y-3">
-        <div className="relative">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            autoComplete="email"
-            inputMode="email"
-            autoCapitalize="none"
-            spellCheck={false}
-            className="h-12 w-full rounded-xl border border-line bg-surface-2 pl-10 pr-3 text-base outline-none transition-colors placeholder:text-ink-faint focus:border-accent/50 sm:text-sm"
-          />
+        <div>
+          <Label htmlFor="email" className="sr-only">
+            Email address
+          </Label>
+          <div className="relative">
+            <Mail
+              aria-hidden
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint"
+            />
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="pl-10"
+            />
+          </div>
         </div>
+
         <Button
           type="submit"
           size="lg"
@@ -173,13 +177,9 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
       </form>
 
       {error && (
-        <p
-          role="alert"
-          className="mt-4 flex gap-2 rounded-xl border border-danger/25 bg-danger/10 px-3.5 py-3 text-sm leading-relaxed text-danger"
-        >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </p>
+        <Callout tone="danger" className="mt-4" icon={<AlertTriangle />}>
+          {error}
+        </Callout>
       )}
 
       <p className="mt-6 text-center text-xs leading-relaxed text-ink-faint">

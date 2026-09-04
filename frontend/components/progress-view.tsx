@@ -2,8 +2,12 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Flame, Clock, CalendarDays, TrendingUp, TrendingDown, Minus, Brain, AlertTriangle } from 'lucide-react';
-import { Card, Badge, Button, Progress } from './ui';
+import {
+  Flame, Clock, CalendarDays, TrendingUp, TrendingDown, Minus, Brain, AlertTriangle,
+} from 'lucide-react';
+import {
+  Card, Badge, Button, Progress, Stat, PageHeader, SectionHeader, Callout, FadeIn, CountUp,
+} from './ui';
 import { StudyHeatmap, type HeatDay } from './study-heatmap';
 import { cn, formatMinutes, formatDate } from '../lib/utils';
 
@@ -29,11 +33,26 @@ export interface ProgressData {
   weakTopics: Array<{ id: string; title: string; mastery: number }>;
 }
 
-const STATUS_COPY: Record<ProgressData['status'], { label: string; tone: string; icon: typeof TrendingUp; line: string }> = {
-  ahead: { label: 'Ahead of schedule', tone: 'success', icon: TrendingUp, line: 'You have built a buffer. Use it on the topics you find hardest, not on finishing early.' },
-  'on-track': { label: 'On pace', tone: 'success', icon: Minus, line: 'Progress matches the calendar. Keep the streak and this lands on time.' },
-  slipping: { label: 'Slipping', tone: 'warn', icon: TrendingDown, line: 'A little behind. One reschedule now costs less than three more weeks of drift.' },
-  behind: { label: 'Behind schedule', tone: 'danger', icon: TrendingDown, line: 'Meaningfully behind. Reschedule, or move the target date — do not just study faster.' },
+const STATUS_COPY: Record<
+  ProgressData['status'],
+  { label: string; tone: string; icon: typeof TrendingUp; line: string }
+> = {
+  ahead: {
+    label: 'Ahead of schedule', tone: 'success', icon: TrendingUp,
+    line: 'You have built a buffer. Use it on the topics you find hardest, not on finishing early.',
+  },
+  'on-track': {
+    label: 'On pace', tone: 'success', icon: Minus,
+    line: 'Progress matches the calendar. Keep the streak and this lands on time.',
+  },
+  slipping: {
+    label: 'Slipping', tone: 'warn', icon: TrendingDown,
+    line: 'A little behind. One reschedule now costs less than three more weeks of drift.',
+  },
+  behind: {
+    label: 'Behind schedule', tone: 'danger', icon: TrendingDown,
+    line: 'Meaningfully behind. Reschedule, or move the target date — do not just study faster.',
+  },
 };
 
 export function ProgressView({
@@ -49,124 +68,151 @@ export function ProgressView({
 }) {
   const status = STATUS_COPY[data.status];
   const StatusIcon = status.icon;
-
   const paceGap = data.requiredPace - Math.round(data.minutesLast7 / 7);
+  const late = data.projectedFinish ? new Date(data.projectedFinish) > new Date(targetDate) : false;
 
   return (
-    <div className="animate-in">
-      <h1 className="font-display text-fluid-h2 font-semibold">Progress</h1>
-      <p className="mt-1.5 text-sm text-ink-muted">
-        Measured from what you actually completed, not from what the plan hoped for.
-      </p>
+    <div className="space-y-6">
+      <FadeIn>
+        <PageHeader
+          title="Progress"
+          description="Measured from what you actually completed, not from what the plan hoped for."
+        />
+      </FadeIn>
 
       {/* ---------------------------------------------------------- pace */}
-      <Card className="mt-7 p-4 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <Badge tone={status.tone}>
-              <StatusIcon className="h-3 w-3" />
-              {status.label}
-            </Badge>
-            <p className="mt-3 font-display text-2xl font-semibold sm:text-3xl">
-              {data.donePct}<span className="text-lg text-ink-faint">%</span>
-            </p>
-            <p className="mt-1 text-xs text-ink-muted">
-              complete · schedule expects {data.expectedPct}%
-            </p>
+      <FadeIn delay={0.05}>
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+            <div>
+              <Badge tone={status.tone}>
+                <StatusIcon />
+                {status.label}
+              </Badge>
+              <p className="mt-3 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                <CountUp value={data.donePct} />
+                <span className="text-lg text-ink-faint">%</span>
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">
+                complete · schedule expects <span className="tabular">{data.expectedPct}%</span>
+              </p>
+            </div>
+
+            <div className="text-right">
+              <p className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                <CountUp value={data.daysLeft} />
+              </p>
+              <p className="mt-1 text-xs text-ink-muted">
+                days left · target {formatDate(targetDate, { year: 'numeric' })}
+              </p>
+            </div>
           </div>
 
-          <div className="text-right">
-            <p className="font-display text-2xl font-semibold sm:text-3xl">{data.daysLeft}</p>
-            <p className="mt-1 text-xs text-ink-muted">
-              days left · target {formatDate(targetDate, { year: 'numeric' })}
-            </p>
+          {/*
+            Progress against an expectation marker — one axis, no dual scale.
+            The marker's label is clamped away from both ends so it never runs
+            off the edge of the card on a narrow screen.
+          */}
+          <div className="relative mt-8">
+            <Progress
+              value={data.donePct}
+              tone={data.status === 'behind' ? 'danger' : data.status === 'slipping' ? 'warn' : 'success'}
+              className="h-2"
+              label={`${data.donePct}% complete against a ${data.expectedPct}% expectation`}
+            />
+            <span
+              aria-hidden
+              className="absolute -top-1 h-4 w-px bg-ink-faint"
+              style={{ left: `${Math.min(100, data.expectedPct)}%` }}
+            />
+            <span
+              aria-hidden
+              className="absolute -top-6 -translate-x-1/2 whitespace-nowrap text-2xs text-ink-faint"
+              style={{ left: `${Math.min(88, Math.max(12, data.expectedPct))}%` }}
+            >
+              on schedule
+            </span>
           </div>
-        </div>
 
-        {/* Progress against an expectation marker — one axis, no dual scale. */}
-        <div className="relative mt-6">
-          <Progress
-            value={data.donePct}
-            tone={data.status === 'behind' || data.status === 'slipping' ? 'accent' : 'success'}
-            className="h-2"
-          />
-          <div
-            className="absolute -top-1 h-4 w-px bg-ink-faint"
-            style={{ left: `${Math.min(100, data.expectedPct)}%` }}
-            aria-hidden
-          />
-          <span
-            className="absolute -top-6 -translate-x-1/2 whitespace-nowrap text-2xs text-ink-faint"
-            style={{ left: `${Math.min(96, Math.max(4, data.expectedPct))}%` }}
-          >
-            on schedule
-          </span>
-        </div>
+          <p className="mt-5 max-w-measure text-sm leading-relaxed text-ink-muted">{status.line}</p>
 
-        <p className="mt-5 text-sm leading-relaxed text-ink-muted">{status.line}</p>
-
-        {data.overdueItems > 0 && (
-          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-warn/25 bg-warn/[0.07] px-3 py-2.5">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-warn" />
-            <p className="flex-1 text-xs">
-              {data.overdueItems} item{data.overdueItems === 1 ? '' : 's'} overdue.
-            </p>
-            <Link href={`/plan/${planId}/today`}>
-              <Button size="sm" variant="secondary">Fix on Today</Button>
-            </Link>
-          </div>
-        )}
-      </Card>
+          {data.overdueItems > 0 && (
+            <Callout
+              tone="warn"
+              className="mt-4"
+              icon={<AlertTriangle />}
+              title={`${data.overdueItems} item${data.overdueItems === 1 ? '' : 's'} overdue`}
+              action={
+                <Button asChild size="sm" variant="secondary">
+                  <Link href={`/plan/${planId}/today`}>Fix on Today</Link>
+                </Button>
+              }
+            />
+          )}
+        </Card>
+      </FadeIn>
 
       {/* --------------------------------------------------------- tiles */}
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Tile
-          icon={<Flame className="h-4 w-4" />}
-          value={String(data.streak)}
-          label="day streak"
-          hint={data.longestStreak > data.streak ? `best ${data.longestStreak}` : 'personal best'}
-          accent={data.streak > 0}
-        />
-        <Tile
-          icon={<Clock className="h-4 w-4" />}
-          value={formatMinutes(data.minutesTotal)}
-          label="total studied"
-          hint={`${formatMinutes(data.minutesLast7)} this week`}
-        />
-        <Tile
-          icon={<TrendingUp className="h-4 w-4" />}
-          value={formatMinutes(data.dailyAverage)}
-          label="daily average"
-          hint={`target ${formatMinutes(dailyTarget)}`}
-        />
-        <Tile
-          icon={<CalendarDays className="h-4 w-4" />}
-          value={formatMinutes(data.requiredPace)}
-          label="needed per day"
-          hint={
-            paceGap > 15 ? `${formatMinutes(paceGap)} above your pace`
-            : paceGap < -15 ? 'comfortably under pace'
-            : 'matches your pace'
-          }
-          warn={paceGap > 15}
-        />
-      </div>
+      <FadeIn delay={0.1}>
+        {/*
+          Two columns on a phone, four from `sm` up. The old `lg:grid-cols-4`
+          only kicked in at a 1024px *viewport*, but this column is capped well
+          below that — so on a laptop the tiles stayed stacked two-wide with
+          half the row empty.
+        */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          <Stat
+            icon={<Flame />}
+            tone={data.streak > 0 ? 'accent' : 'default'}
+            value={data.streak}
+            label="day streak"
+            hint={data.longestStreak > data.streak ? `best ${data.longestStreak}` : 'personal best'}
+          />
+          <Stat
+            icon={<Clock />}
+            value={formatMinutes(data.minutesTotal)}
+            label="total studied"
+            hint={`${formatMinutes(data.minutesLast7)} this week`}
+          />
+          <Stat
+            icon={<TrendingUp />}
+            value={formatMinutes(data.dailyAverage)}
+            label="daily average"
+            hint={`target ${formatMinutes(dailyTarget)}`}
+          />
+          <Stat
+            icon={<CalendarDays />}
+            tone={paceGap > 15 ? 'warn' : 'default'}
+            value={formatMinutes(data.requiredPace)}
+            label="needed per day"
+            hint={
+              paceGap > 15
+                ? `${formatMinutes(paceGap)} above your pace`
+                : paceGap < -15
+                  ? 'comfortably under pace'
+                  : 'matches your pace'
+            }
+          />
+        </div>
+      </FadeIn>
 
       {/* ------------------------------------------------------- heatmap */}
-      <Card className="mt-4 p-6">
-        <StudyHeatmap days={data.heatmap} dailyTarget={dailyTarget} />
-      </Card>
+      <FadeIn delay={0.15}>
+        <Card className="p-4 sm:p-6">
+          <StudyHeatmap days={data.heatmap} dailyTarget={dailyTarget} />
+        </Card>
+      </FadeIn>
 
       {/* ---------------------------------------------------- projection */}
       {data.projectedFinish && (
-        <Card className="mt-4 p-5">
-          <h2 className="font-display text-base font-semibold">Projection</h2>
-          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+        <Card className="p-4 sm:p-5">
+          <SectionHeader title="Projection" />
+          <p className="mt-2 max-w-measure text-sm leading-relaxed text-ink-muted">
             At your pace over the last seven days, you finish around{' '}
             <span className="font-medium text-ink">
               {formatDate(data.projectedFinish, { year: 'numeric' })}
             </span>
-            {new Date(data.projectedFinish) > new Date(targetDate) ? (
+            {late ? (
               <span className="text-warn"> — after your target.</span>
             ) : (
               <span className="text-success"> — comfortably inside your target.</span>
@@ -175,71 +221,46 @@ export function ProgressView({
         </Card>
       )}
 
-      {/* --------------------------------------------------------- units */}
-      {data.units.length > 0 && (
-        <Card className="mt-4 p-6">
-          <h2 className="font-display text-base font-semibold">Mastery by unit</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            Built from drill accuracy and recall intervals, not from items ticked off.
-          </p>
-          <MasteryBars units={data.units} />
-        </Card>
-      )}
-
-      {/* ----------------------------------------------------- weakest */}
-      {data.weakTopics.length > 0 && (
-        <Card className="mt-4 p-6">
-          <h2 className="font-display text-base font-semibold">Weakest right now</h2>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            The highest-leverage places to spend your next drill session.
-          </p>
-          <ul className="mt-4 space-y-2">
-            {data.weakTopics.map((topic) => (
-              <li key={topic.id} className="flex items-center gap-3">
-                <span className="tabular w-9 shrink-0 text-xs text-ink-faint">{topic.mastery}%</span>
-                <span className="min-w-0 flex-1 truncate text-sm">{topic.title}</span>
-                <Link href={`/plan/${planId}/drill?topic=${topic.id}`}>
-                  <Button size="sm" variant="ghost">
-                    <Brain className="h-3.5 w-3.5" />
-                    Drill
-                  </Button>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ tiles */
-
-function Tile({
-  icon, value, label, hint, accent, warn,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-  hint?: string;
-  accent?: boolean;
-  warn?: boolean;
-}) {
-  return (
-    <Card className="p-4">
-      <span
-        className={cn(
-          'flex h-7 w-7 items-center justify-center rounded-lg',
-          warn ? 'bg-warn/12 text-warn' : accent ? 'bg-accent/12 text-accent' : 'bg-surface-3 text-ink-faint',
+      {/*
+        Mastery and weak topics sit side by side once there is room. They are
+        read together — "where am I strong" and "what do I do about it" — and
+        stacking them on a wide screen pushes the answer below the fold.
+      */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        {data.units.length > 0 && (
+          <Card className="p-4 sm:p-6">
+            <SectionHeader
+              title="Mastery by unit"
+              description="Built from drill accuracy and recall intervals, not from items ticked off."
+            />
+            <MasteryBars units={data.units} />
+          </Card>
         )}
-      >
-        {icon}
-      </span>
-      {/* Proportional figures: tabular-nums makes display sizes look loose. */}
-      <p className="mt-3 font-display text-xl font-semibold leading-none">{value}</p>
-      <p className="mt-1.5 text-2xs uppercase tracking-wider text-ink-faint">{label}</p>
-      {hint && <p className="mt-1 text-2xs text-ink-muted">{hint}</p>}
-    </Card>
+
+        {data.weakTopics.length > 0 && (
+          <Card className="p-4 sm:p-6">
+            <SectionHeader
+              title="Weakest right now"
+              description="The highest-leverage places to spend your next drill session."
+            />
+            <ul className="mt-4 space-y-1">
+              {data.weakTopics.map((topic) => (
+                <li key={topic.id} className="flex items-center gap-3">
+                  <span className="tabular w-9 shrink-0 text-xs text-ink-faint">{topic.mastery}%</span>
+                  <span className="min-w-0 flex-1 truncate text-sm">{topic.title}</span>
+                  <Button asChild size="sm" variant="ghost">
+                    <Link href={`/plan/${planId}/drill?topic=${topic.id}`}>
+                      <Brain />
+                      Drill
+                    </Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -254,16 +275,17 @@ function MasteryBars({ units }: { units: ProgressData['units'] }) {
   return (
     <div className="mt-5 space-y-3">
       {units.map((unit) => (
-        <div key={unit.title} className="group">
+        <div key={unit.title}>
           <div className="flex items-baseline justify-between gap-3">
             <span className="min-w-0 flex-1 truncate text-xs">{unit.title}</span>
-            <span className="tabular shrink-0 text-xs font-medium text-ink-muted">
-              {unit.mastery}%
-            </span>
+            <span className="tabular shrink-0 text-xs font-medium text-ink-muted">{unit.mastery}%</span>
           </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
             <div
-              className="h-full rounded-full bg-accent transition-[width] duration-700 ease-out"
+              className={cn(
+                'h-full rounded-full transition-[width] duration-700 ease-out',
+                unit.mastery >= 70 ? 'bg-success' : 'bg-accent',
+              )}
               style={{ width: `${Math.max(unit.mastery, unit.mastery > 0 ? 2 : 0)}%` }}
               role="img"
               aria-label={`${unit.title}: ${unit.mastery}% mastery`}

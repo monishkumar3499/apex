@@ -17,7 +17,7 @@ import { cn } from '../../lib/utils';
 const buttonVariants = cva(
   cn(
     'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap font-medium',
-    'transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out',
+    'transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out',
     'outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
     'disabled:pointer-events-none disabled:opacity-45',
     // touch-manipulation removes the ~300ms delay mobile browsers add while
@@ -28,11 +28,26 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-accent-fg shadow-e1 hover:bg-accent-hover hover:shadow-e2',
-        secondary: 'border border-line bg-surface-2 text-ink hover:border-line-strong hover:bg-surface-3',
-        outline: 'border border-line-strong bg-transparent text-ink hover:bg-surface-2',
-        ghost: 'text-ink-muted hover:bg-surface-2 hover:text-ink',
-        danger: 'border border-danger/25 bg-danger/12 text-danger hover:bg-danger/20',
+        /**
+         * The one filled button. Carries the accent bloom, because on Aurora
+         * Glass "the primary action" is expressed as the brightest thing on
+         * the screen rather than as the only coloured rectangle.
+         *
+         * `ring-inset` supplies the specular top edge. Without it a filled
+         * button is the one element on a glass page with no material to it.
+         */
+        primary: cn(
+          'bg-accent text-accent-fg ring-1 ring-inset ring-glass-edge/20',
+          'shadow-glow hover:bg-accent-hover hover:shadow-glow-lg',
+        ),
+        /** Frosted. The default for anything that is not the primary action. */
+        secondary: 'glass text-ink hover:border-accent/30 hover:text-accent hover:shadow-glow',
+        outline: cn(
+          'border border-line-strong bg-transparent text-ink backdrop-blur-sm',
+          'hover:border-accent/40 hover:bg-glass/[0.06] hover:text-accent',
+        ),
+        ghost: 'text-ink-muted hover:bg-glass/[0.08] hover:text-ink',
+        danger: 'border border-danger/25 bg-danger/12 text-danger backdrop-blur-sm hover:bg-danger/20',
         /** Reads as a link, keeps the button hit-area and focus ring. */
         link: 'text-accent underline-offset-4 hover:underline',
       },

@@ -56,6 +56,8 @@ export async function classifyGoal(params: {
   weeks: number;
   hoursPerWeek: number;
   ledger?: TokenLedger;
+  /** Whose request this is, so the provider gate can round-robin between learners. */
+  owner?: string;
 }): Promise<IntakeResult> {
   try {
     const result = await runJson<IntakeResult>({
@@ -68,6 +70,7 @@ export async function classifyGoal(params: {
       reasoning: { effort: 'low' },
       schemaHint: INTAKE_SCHEMA_HINT,
       ledger: params.ledger,
+      owner: params.owner,
       messages: [
         { role: 'system', content: INTAKE_SYSTEM },
         { role: 'user', content: intakeUser(params.goal, params.level, params.weeks, params.hoursPerWeek) },
@@ -264,6 +267,9 @@ export async function buildPlan(planId: string): Promise<void> {
       // combined call for this much structure measured at 33 seconds against
       // the live API, and it is the longest thing a learner waits on.
       const generation = await generateBlueprint({
+        // Every model call in this build queues under the learner who started
+        // it, so a six-month plan cannot starve nineteen other people.
+        owner: userId,
         req: {
           subject,
           prepType: plan.prep_type,
@@ -457,7 +463,9 @@ export async function buildPlan(planId: string): Promise<void> {
       userId,
       'resources',
       'ok',
-      `${curation.resources.length} verified resources attached`,
+      // The video count is the number a learner actually feels, so it is in the
+      // message rather than only in the meta payload.
+      `${curation.resources.length} verified resources · ${curation.stats.withVideo}/${topicRows.length} topics have something to watch`,
       curation.stats,
     );
 

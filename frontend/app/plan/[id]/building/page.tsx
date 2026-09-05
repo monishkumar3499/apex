@@ -5,9 +5,11 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import {
-  Check, Loader2, AlertTriangle, Compass, RefreshCw, ArrowLeft, ShieldCheck,
+  Check, Loader2, AlertTriangle, RefreshCw, ArrowLeft, ShieldCheck,
 } from 'lucide-react';
-import { Button, Card, Progress, Spine, SpineNode, FadeIn, EASE } from '../../../../components/ui';
+import {
+  Button, Card, KairoMark, OrbitField, Progress, Spine, SpineNode, FadeIn, Void, EASE,
+} from '../../../../components/ui';
 import { InsightStream } from '../../../../components/insight-stream';
 import { cn } from '../../../../lib/utils';
 
@@ -96,10 +98,15 @@ export default function BuildingPage() {
 
   if (failed) {
     return (
-      <main id="main" className="flex min-h-dvh items-center justify-center px-4 py-16 sm:px-5">
-        <FadeIn className="w-full max-w-md">
+      <main
+        id="main"
+        className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-16 sm:px-5"
+      >
+        <Void variant="ambient" />
+
+        <FadeIn className="relative w-full max-w-md">
           <Card raised className="rounded-panel p-6 text-center sm:p-8">
-            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/12 text-danger">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/12 text-danger ring-1 ring-inset ring-danger/25">
               <AlertTriangle className="h-6 w-6" />
             </div>
             <h1 className="font-display text-lg font-semibold tracking-tight sm:text-xl">
@@ -107,7 +114,7 @@ export default function BuildingPage() {
             </h1>
             <p className="mt-2.5 text-sm leading-relaxed text-ink-muted">{failed}</p>
             <p className="mt-3 text-xs leading-relaxed text-ink-faint">
-              This is usually a busy model endpoint. APEX tries several models before giving up, so a
+              This is usually a busy model endpoint. Kairo tries several models before giving up, so a
               retry almost always works.
             </p>
 
@@ -134,15 +141,27 @@ export default function BuildingPage() {
       id="main"
       className="relative flex min-h-dvh items-center justify-center px-4 py-10 sm:px-5 sm:py-16"
     >
+      <Void variant="focus" grid />
+
+      {/*
+        The one screen where the full canvas orbit is unambiguously the right
+        call: the learner is waiting, so an animation is not competing with
+        anything they are trying to read — it *is* the content. It also says
+        the true thing about what is happening, which is that a system of
+        topics is being assembled around a goal.
+      */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(55%_70%_at_50%_0%,rgb(var(--accent)/0.10),transparent_72%)]"
-      />
+        className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[min(820px,190%)] -translate-x-1/2 -translate-y-1/2 opacity-60"
+      >
+        <OrbitField intensity={0.9} scale={0.9} className="hidden sm:block" />
+        <OrbitField intensity={0.7} scale={1} density="lite" className="sm:hidden" />
+      </div>
 
       <FadeIn className="relative w-full max-w-lg">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-accent-fg animate-pulse-ring">
-            <Compass className="h-6 w-6" strokeWidth={2.5} />
+          <div className="glass mx-auto grid h-14 w-14 animate-pulse-ring place-items-center rounded-2xl text-accent-vivid shadow-glow-lg">
+            <KairoMark className="h-7 w-7" gradient id="building" />
           </div>
           <h1 className="mt-6 font-display text-fluid-h3 font-semibold tracking-tight">
             Building your prep map
@@ -156,13 +175,15 @@ export default function BuildingPage() {
           <Progress value={buildProgress} label="Build progress" />
           <div className="mt-2 flex items-center justify-between text-2xs text-ink-faint">
             <span aria-live="polite">
-              {doneCount} of {STAGES.length} stages
+              <span className="font-mono">{doneCount}</span> of{' '}
+              <span className="font-mono">{STAGES.length}</span> stages
             </span>
-            <span className="tabular">{formatElapsed(elapsed)}</span>
+            <span className="font-mono">{formatElapsed(elapsed)}</span>
           </div>
         </div>
 
-        <Card raised className="mt-5 rounded-panel p-4 sm:p-5">
+        <Card raised className="relative mt-5 overflow-hidden rounded-panel p-4 sm:p-5">
+          <div className="holo-rule absolute inset-x-0 top-0" />
           {/*
             The same spine that carries the day on Today, carrying the build
             here — with a highlight travelling down the rail while work is
@@ -183,11 +204,13 @@ export default function BuildingPage() {
                   <li
                     key={stage.key}
                     className={cn(
-                      'flex items-start gap-3 rounded-lg py-1.5 pr-2 transition-colors',
-                      state === 'active' && 'bg-accent/[0.06]',
+                      'flex items-start gap-3 rounded-lg py-1.5 pr-2 transition-colors duration-300',
+                      // The running stage is the only lit row, so "where is it
+                      // up to" is answerable from across the room.
+                      state === 'active' && 'bg-accent/[0.08] shadow-[inset_2px_0_0_0_rgb(var(--accent-vivid))]',
                     )}
                   >
-                    <SpineNode state={state} size="sm">
+                    <SpineNode state={state} size="sm" className={state === 'active' ? 'spine-node-live' : undefined}>
                       {state === 'done' ? (
                         <motion.span
                           initial={{ scale: 0.5, opacity: 0 }}

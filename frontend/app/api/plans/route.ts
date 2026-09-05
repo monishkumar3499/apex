@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { route, ok, requireUser, parseBody } from '../../../lib/api';
 import { createPlan, buildPlan } from '../../../../backend/services/plan-service';
 import { admin } from '../../../../backend/db/supabase';
+import { checkCapacity } from '../../../../backend/planner/capacity';
+import { diffDays } from '../../../../backend/planner/calendar';
 import { logger } from '../../../../backend/logger/pino';
 
 export const runtime = 'nodejs';
@@ -26,7 +28,13 @@ const schema = z.object({
   level: z.string().min(2),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  weekdayMinutes: z.number().min(15).max(900),
+  /*
+    Both may be zero. The rule is on the *total*, not on either kind of day —
+    "I only study at weekends" is a legitimate answer, and a 15-minute weekday
+    floor rejected it while happily accepting 20 minutes a week for a year.
+    `checkCapacity` below is what actually decides.
+  */
+  weekdayMinutes: z.number().min(0).max(900),
   weekendMinutes: z.number().min(0).max(900),
   restDays: z.array(z.number().min(0).max(6)).max(6).default([]),
   intake: intakeSchema,
@@ -53,6 +61,40 @@ export const POST = route('plans.create', async (request) => {
 
   if (new Date(body.targetDate) <= new Date(body.startDate)) {
     return ok({ error: 'Target date must be after the start date' }, { status: 400 });
+  }
+
+  /*
+    The same check the wizard runs, applied again here.
+
+    Not redundant: the wizard can only disable its own button, and this is a
+    public JSON endpoint. Sharing one implementation is what keeps the two from
+    drifting into disagreeing about what a valid plan is.
+  */
+  const capacity = checkCapacity({
+    startDate: body.startDate,
+    targetDate: body.targetDate,
+    weekdayMinutes: body.weekdayMinutes,
+    weekendMinutes: body.weekendMinutes,
+    restDays: body.restDays ?? [],
+    prepType: body.intake.pt,
+    level: body.level,
+    weeks: Math.max(1, Math.round(diffDays(body.startDate, body.targetDate) / 7)),
+  });
+
+  if (!capacity.ok) {
+    return ok(
+      {
+        error: capacity.message,
+        // Echoed so a client can render the shortfall rather than just the
+        // sentence — the wizard shows both numbers on its budget card.
+        capacity: {
+          totalMinutes: capacity.totalMinutes,
+          minimumMinutes: capacity.minimumMinutes,
+          reason: capacity.reason,
+        },
+      },
+      { status: 400 },
+    );
   }
 
   const plan = await createPlan({

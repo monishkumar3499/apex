@@ -6,7 +6,7 @@ import { MotionConfig, motion, useReducedMotion, type Variants } from 'motion/re
 /**
  * Motion, used on purpose.
  *
- * The rule this file exists to enforce: animation in APEX either (a) explains
+ * The rule this file exists to enforce: animation in Kairo either (a) explains
  * where something came from or went to, or (b) confirms that an action landed.
  * Nothing animates because it looks nice — a study tool that makes a learner
  * wait 400ms for a list to decorate itself is stealing the time it claims to

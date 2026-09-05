@@ -126,10 +126,10 @@ export function PlanCard({
               title lengths still line their bars up across the grid. */}
           <div className="mt-auto pt-5">
             <div className="mb-2 flex items-baseline justify-between gap-2">
-              <span className="tabular text-xs text-ink-muted">
+              <span className="font-mono text-xs text-ink-muted">
                 {plan.done_items} / {plan.total_items} items
               </span>
-              <span className="tabular font-display text-lg font-semibold leading-none">
+              <span className="font-mono text-xl font-semibold leading-none tracking-tight">
                 {progress}
                 <span className="text-xs text-ink-faint">%</span>
               </span>
@@ -145,7 +145,7 @@ export function PlanCard({
               <p
                 className={cn(
                   'mt-2.5 flex items-center gap-1.5 text-xs font-medium',
-                  todayDone ? 'text-success' : 'text-accent',
+                  todayDone ? 'text-success' : 'text-cyan',
                 )}
               >
                 {todayDone ? (
@@ -155,7 +155,9 @@ export function PlanCard({
                   </>
                 ) : (
                   <>
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    {/* A live dot, not a static one: this is the only number
+                        on the card that changes during the day. */}
+                    <span className="h-1.5 w-1.5 animate-pulse-ring rounded-full bg-cyan-vivid" />
                     {today.total - today.done} left today
                   </>
                 )}
@@ -178,7 +180,7 @@ export function PlanCard({
                 aria-label={`Options for ${plan.title}`}
                 className={cn(
                   'flex h-touch w-touch items-center justify-center rounded-field text-ink-faint',
-                  'outline-none transition-colors hover:bg-surface-2 hover:text-ink',
+                  'outline-none transition-colors hover:bg-glass/[0.08] hover:text-ink',
                   'focus-visible:ring-2 focus-visible:ring-accent/60',
                   /*
                     Reveal-on-hover makes the control unreachable without a
@@ -186,7 +188,7 @@ export function PlanCard({
                     plan menu simply did not exist. It is always visible, and
                     only hidden until hover where a fine pointer is available.
                   */
-                  'data-[state=open]:bg-surface-2 data-[state=open]:text-ink',
+                  'data-[state=open]:bg-glass/[0.1] data-[state=open]:text-ink',
                   'pointer:opacity-0 pointer:group-hover:opacity-100 pointer:focus-visible:opacity-100 pointer:data-[state=open]:opacity-100',
                 )}
               >

@@ -7,12 +7,30 @@ import { cn } from '../../lib/utils';
 
 type Tone = 'accent' | 'success' | 'info' | 'warn' | 'danger';
 
+/**
+ * Bar fills.
+ *
+ * The accent bar is a violet→cyan gradient rather than a flat fill: the two
+ * accents mean "state" and "quantity", and a progress bar is literally both at
+ * once, so the gradient is the palette's own logic rather than a flourish. The
+ * semantic tones stay flat — an emerald "done" bar that shifted hue would
+ * imply a distinction that is not there.
+ */
 const BAR: Record<Tone, string> = {
-  accent: 'bg-accent',
+  accent: 'bg-gradient-to-r from-accent-vivid to-cyan-vivid',
   success: 'bg-success',
   info: 'bg-info',
   warn: 'bg-warn',
   danger: 'bg-danger',
+};
+
+/** Bloom under the fill, so a bar in motion reads as lit. */
+const BAR_GLOW: Record<Tone, string> = {
+  accent: 'shadow-[0_0_12px_0_rgb(var(--accent)/0.55)]',
+  success: 'shadow-[0_0_12px_0_rgb(var(--success)/0.45)]',
+  info: 'shadow-[0_0_12px_0_rgb(var(--info)/0.45)]',
+  warn: 'shadow-[0_0_12px_0_rgb(var(--warn)/0.45)]',
+  danger: 'shadow-[0_0_12px_0_rgb(var(--danger)/0.45)]',
 };
 
 const STROKE: Record<Tone, string> = {
@@ -51,12 +69,18 @@ export function Progress({
       aria-label={label}
       className={cn(
         'relative h-1.5 w-full overflow-hidden rounded-full',
-        showTrack && 'bg-surface-sunken',
+        showTrack && 'well',
         className,
       )}
     >
       <ProgressPrimitive.Indicator
-        className={cn('h-full w-full rounded-full transition-transform duration-700 ease-out', BAR[tone])}
+        className={cn(
+          'h-full w-full rounded-full transition-transform duration-700 ease-out',
+          BAR[tone],
+          // No glow at zero: an empty bar that still emits light looks like a
+          // rendering artefact rather than like progress not yet made.
+          clamped > 0 && BAR_GLOW[tone],
+        )}
         style={{ transform: `translateX(-${100 - clamped}%)` }}
       />
     </ProgressPrimitive.Root>
@@ -117,6 +141,26 @@ export function Dial({
           strokeWidth={stroke}
           className="stroke-surface-sunken"
         />
+        {/*
+          The lit arc is drawn twice: once blurred underneath as a bloom, once
+          crisp on top. An SVG filter would be the "correct" way and costs a
+          separate render pass per dial — and there are six on the progress
+          screen.
+        */}
+        <motion.circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          initial={{ strokeDashoffset: c }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
+          className={cn(STROKE[tone], 'opacity-45 blur-[3px]')}
+          aria-hidden
+        />
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -132,7 +176,7 @@ export function Dial({
         />
       </svg>
       <span
-        className="absolute inset-0 flex items-center justify-center text-2xs font-semibold tabular"
+        className="absolute inset-0 flex items-center justify-center font-mono text-2xs font-semibold"
         aria-hidden
       >
         {children ?? `${clamped}%`}

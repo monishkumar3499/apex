@@ -68,6 +68,10 @@ export async function POST(request: Request): Promise<Response> {
           // mandate reasoning are retried without the hint by the client.
           maxTokens: 4000,
           reasoning: { enabled: false },
+          // A coach question is one small call, and it must not sit behind
+          // somebody else's in-flight six-month build. Tagging the owner puts
+          // it in its own lane at the provider gate.
+          owner: user.id,
         });
 
         for await (const delta of generator) {

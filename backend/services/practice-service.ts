@@ -63,6 +63,7 @@ export async function ensureQuestions(params: {
       maxTokens: 8000,
       reasoning: { effort: 'low' },
       schemaHint: PRACTICE_SCHEMA_HINT,
+      owner: params.userId,
       messages: [
         { role: 'system', content: PRACTICE_SYSTEM },
         {

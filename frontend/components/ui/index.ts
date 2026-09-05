@@ -1,16 +1,20 @@
 /**
- * The APEX component layer.
+ * The Kairo component layer.
  *
  * shadcn/ui conventions — Radix primitives, `cva` variants, `cn` merging, and
  * components owned in-repo rather than imported from a package — wired to
- * APEX's own semantic tokens (`bg-surface`, `text-ink`, `bg-accent`) instead
+ * Kairo's own semantic tokens (`bg-surface`, `text-ink`, `bg-accent`) instead
  * of shadcn's default `background`/`foreground` names.
  *
  * That substitution is deliberate. shadcn's palette reserves `accent` for
- * hover backgrounds, while APEX has used `accent` to mean "the amber that
- * carries every interactive state" since the design system was written. Taking
- * shadcn's naming would have silently redefined a token used in forty files.
- * The architecture is shadcn's; the vocabulary stays APEX's.
+ * hover backgrounds, while this codebase has used `accent` to mean "the colour
+ * that carries every interactive state" since the design system was written.
+ * Taking shadcn's naming would have silently redefined a token used in forty
+ * files. The architecture is shadcn's; the vocabulary stays Kairo's.
+ *
+ * The three groups below are the Aurora Glass layers, and the order is the
+ * paint order: void behind, glass in the middle, light on top. See the header
+ * of `app/globals.css` for what each layer is allowed to do.
  */
 
 export { Button, buttonVariants, type ButtonProps } from './button';
@@ -24,6 +28,14 @@ export { PageHeader, SectionHeader } from './page-header';
 export { Segmented, SegmentedMulti, SegmentedTabs, type SegmentedOption } from './segmented';
 export { Spine, SpineNode } from './spine';
 export { Slider } from './slider';
+
+/* --- Layer 0: the void ------------------------------------------------- */
+export { Void, OrbitRings } from './void';
+export { OrbitField } from './orbit-field';
+
+/* --- Layer 2: depth and light ----------------------------------------- */
+export { Tilt, FlipCard } from './tilt';
+export { KairoMark, KairoLogo } from './mark';
 
 export {
   Dialog,

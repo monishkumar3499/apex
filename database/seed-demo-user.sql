@@ -1,5 +1,5 @@
 -- ============================================================================
--- APEX · demo user seed
+-- Kairo · demo user seed
 -- ============================================================================
 -- NEXT_PUBLIC_DEMO_MODE=true bypasses auth and pins every request to the fixed
 -- UUID in frontend/lib/supabase/server.ts (DEMO_USER_ID). Every user-owned row
@@ -17,8 +17,8 @@ insert into auth.users (
 ) values (
   '00000000-0000-0000-0000-000000000000',
   '00000000-0000-0000-0000-000000000001',
-  'authenticated', 'authenticated', 'demo@apex.app',
-  crypt('apex-demo-password', gen_salt('bf')),
+  'authenticated', 'authenticated', 'demo@kairo.app',
+  crypt('kairo-demo-password', gen_salt('bf')),
   now(), now(), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
   '{"full_name":"Demo Learner"}'::jsonb,

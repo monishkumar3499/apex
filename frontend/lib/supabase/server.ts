@@ -47,7 +47,7 @@ export async function currentUser(): Promise<SessionUser | null> {
   // middleware still honoured it — auth then half-applied, which is worse
   // than either mode.
   if (demoMode()) {
-    return { id: DEMO_USER_ID, email: 'demo@apex.app', name: 'Demo Learner', avatarUrl: null };
+    return { id: DEMO_USER_ID, email: 'demo@kairo.app', name: 'Demo Learner', avatarUrl: null };
   }
 
   const supabase = await supabaseServer();

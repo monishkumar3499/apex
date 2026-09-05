@@ -2,16 +2,17 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Compass, ArrowRight, Menu } from 'lucide-react';
+import { ArrowRight, Menu } from 'lucide-react';
 import { ThemeToggle } from './theme';
 import {
-  Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
+  Button, KairoLogo, Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose,
 } from './ui';
 import { cn } from '../lib/utils';
 
 const LINKS = [
   { href: '#how', label: 'How it works' },
   { href: '#surfaces', label: 'The app' },
+  { href: '#reschedule', label: 'Rescheduling' },
   { href: '#why', label: 'Why it holds up' },
 ];
 
@@ -20,11 +21,11 @@ export function LandingNav() {
   const [scrolled, setScrolled] = React.useState(false);
 
   /**
-   * The header only grows a border once the page has moved.
+   * The header only becomes glass once the page has moved.
    *
-   * At the top it sits flush on the hero's gradient; a hairline there cuts the
-   * gradient in half for no reason. `passive` because this listener must never
-   * be able to delay a scroll.
+   * At the top it sits flush on the hero's aurora; frosting it there would blur
+   * the very gradient the hero is built around, and a hairline would cut it in
+   * half. `passive` because this listener must never be able to delay a scroll.
    */
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -36,27 +37,36 @@ export function LandingNav() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 pt-safe transition-all duration-300',
-        scrolled ? 'border-b border-line/70 bg-bg/85 backdrop-blur-xl' : 'border-b border-transparent',
+        'sticky top-0 z-40 pt-safe transition-all duration-500 ease-out',
+        scrolled
+          ? 'border-b border-glass-edge/[0.07] bg-bg/70 backdrop-blur-2xl'
+          : 'border-b border-transparent',
       )}
     >
-      <div className="mx-auto flex h-14 w-full max-w-content items-center justify-between gap-3 px-4 sm:h-16 sm:px-6 lg:px-8">
+      {/* An iridescent hairline under the bar, revealed only once it frosts. */}
+      <div
+        aria-hidden
+        className={cn(
+          'holo-rule absolute inset-x-0 bottom-0 transition-opacity duration-500',
+          scrolled ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+
+      <div className="mx-auto flex h-16 w-full max-w-content items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="-my-2 flex min-h-touch shrink-0 items-center gap-2.5 rounded-lg py-2 outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          aria-label="Kairo home"
+          className="-my-2 flex min-h-touch shrink-0 items-center rounded-xl py-2 outline-none transition-transform duration-300 ease-out focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg pointer:hover:scale-[1.02]"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-fg sm:h-8 sm:w-8">
-            <Compass className="h-4 w-4 sm:h-4.5 sm:w-4.5" strokeWidth={2.5} />
-          </span>
-          <span className="font-display text-base font-semibold tracking-tight">APEX</span>
+          <KairoLogo size="sm" id="nav" />
         </Link>
 
-        <nav aria-label="Sections" className="hidden items-center gap-7 text-sm text-ink-muted md:flex">
+        <nav aria-label="Sections" className="hidden items-center gap-1 md:flex">
           {LINKS.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="rounded transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              className="rounded-field px-3 py-2 text-sm text-ink-muted transition-colors hover:bg-glass/[0.06] hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             >
               {link.label}
             </a>
@@ -77,24 +87,31 @@ export function LandingNav() {
             <button
               onClick={() => setOpen(true)}
               aria-label="Open menu"
-              className="flex h-9 w-9 items-center justify-center rounded-field text-ink-muted outline-none transition-colors hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/60 active:bg-surface-3 md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-field text-ink-muted outline-none transition-colors hover:bg-glass/[0.08] hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/60 active:bg-glass/[0.12] md:hidden"
             >
               <Menu className="h-5 w-5" />
             </button>
 
             <SheetContent side="right" className="md:hidden">
               <SheetHeader>
-                <SheetTitle>Menu</SheetTitle>
+                <SheetTitle>
+                  <KairoLogo size="sm" id="sheet" />
+                </SheetTitle>
               </SheetHeader>
 
               <nav aria-label="Sections" className="flex flex-col gap-2 p-4">
-                {LINKS.map((link) => (
+                {LINKS.map((link, i) => (
                   <SheetClose asChild key={link.href}>
                     <a
                       href={link.href}
-                      className="flex min-h-touch items-center rounded-xl border border-line bg-surface-2 px-4 py-3 text-base font-medium text-ink outline-none transition-colors hover:border-accent/40 focus-visible:ring-2 focus-visible:ring-accent/60"
+                      // Staggered so the panel's contents arrive as a sequence
+                      // rather than as one block, which is what makes a sheet
+                      // feel like it opened rather than appeared.
+                      style={{ animationDelay: `${60 + i * 45}ms` }}
+                      className="glass flex min-h-touch animate-rise-in items-center justify-between rounded-card px-4 py-3.5 text-base font-medium text-ink outline-none transition-colors hover:border-accent/40 focus-visible:ring-2 focus-visible:ring-accent/60"
                     >
                       {link.label}
+                      <ArrowRight className="h-4 w-4 text-ink-faint" />
                     </a>
                   </SheetClose>
                 ))}

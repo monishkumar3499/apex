@@ -5,10 +5,22 @@ import { LibraryView, type LibraryResource } from '../../../../components/librar
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  /**
+   * `?q=` pre-fills the search box.
+   *
+   * The map links here with a topic's title, which is what makes "find the
+   * video for this topic" a single click rather than a click plus retyping the
+   * topic name from memory.
+   */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default async function LibraryPage({ params }: Props) {
+export default async function LibraryPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const query = await searchParams;
+  const initialQuery = (Array.isArray(query.q) ? query.q[0] : query.q) ?? '';
   const user = await currentUser();
   if (!user) redirect(`/login?next=/plan/${id}/library`);
 
@@ -48,5 +60,12 @@ export default async function LibraryPage({ params }: Props) {
     topics: topicsFor.get(r.id) ?? [],
   }));
 
-  return <LibraryView resources={list} />;
+  /*
+    Every topic in the plan, in syllabus order — including ones with nothing
+    attached, so the filter row is a map of the syllabus rather than a map of
+    whatever curation happened to find.
+  */
+  const topicNames = (topics ?? []).map((t: any) => t.title as string);
+
+  return <LibraryView resources={list} topics={topicNames} initialQuery={initialQuery} />;
 }

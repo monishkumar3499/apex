@@ -76,6 +76,32 @@ export default async function TodayPage({ params }: Props) {
     .slice()
     .sort((a, b) => a.idx - b.idx);
 
+  /*
+    Everything else attached to today's topics, beyond the one resource the
+    scheduler pinned to each item.
+
+    A `learn` item opens with its single best-matched resource, which is often a
+    doc — so the topic's video was reachable only from the Library, two
+    navigations away from the screen the learner is actually on. One extra query
+    keyed on the topics already loaded fixes that.
+  */
+  const topicIds = [...new Set(items.map((i) => i.topics?.id).filter(Boolean))] as string[];
+
+  const { data: topicLinks } = topicIds.length
+    ? await db
+        .from('topic_resources')
+        .select('topic_id, rank, resources ( id, kind, title, url, author, thumbnail_url, duration_sec, why )')
+        .eq('plan_id', id)
+        .in('topic_id', topicIds)
+        .order('rank', { ascending: true })
+    : { data: [] };
+
+  const extrasByTopic: Record<string, SessionItem['resources'][]> = {};
+  for (const link of (topicLinks ?? []) as any[]) {
+    if (!link.resources) continue;
+    (extrasByTopic[link.topic_id] ??= []).push(link.resources);
+  }
+
   return (
     <TodayBoard
       planId={id}
@@ -86,6 +112,7 @@ export default async function TodayPage({ params }: Props) {
       headline={active?.headline ?? null}
       plannedMinutes={active?.planned_minutes ?? 0}
       items={items}
+      topicResources={extrasByTopic}
       overdue={(overdue ?? []).map((o: any) => ({
         id: o.id,
         title: o.title,

@@ -29,7 +29,7 @@ const DropdownMenuContent = React.forwardRef<
       sideOffset={sideOffset}
       collisionPadding={12}
       className={cn(
-        'surface-raised z-50 overflow-hidden rounded-xl p-1',
+        'glass-raised z-50 overflow-hidden rounded-xl p-1',
         // Never wider than a 320px phone, never narrower than readable.
         'min-w-[10rem] max-w-[calc(100vw-1.5rem)]',
         'data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
@@ -57,7 +57,7 @@ const DropdownMenuItem = React.forwardRef<
       '[&_svg]:size-4 [&_svg]:shrink-0',
       tone === 'danger'
         ? 'text-danger data-[highlighted]:bg-danger/10'
-        : 'text-ink-muted data-[highlighted]:bg-surface-2 data-[highlighted]:text-ink',
+        : 'text-ink-muted data-[highlighted]:bg-glass/[0.09] data-[highlighted]:text-ink',
       className,
     )}
     {...props}
@@ -75,7 +75,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     className={cn(
       'relative flex min-h-touch cursor-pointer select-none items-center gap-2.5 rounded-lg py-2 pl-8 pr-3',
       'text-sm text-ink-muted outline-none transition-colors',
-      'data-[highlighted]:bg-surface-2 data-[highlighted]:text-ink',
+      'data-[highlighted]:bg-glass/[0.09] data-[highlighted]:text-ink',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-45',
       className,
     )}

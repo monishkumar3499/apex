@@ -3,6 +3,7 @@ import { currentUser } from '../../../lib/supabase/server';
 import { admin } from '../../../../backend/db/supabase';
 import { getProgress } from '../../../../backend/services/progress-service';
 import { PlanSidebar } from '../../../components/plan-sidebar';
+import { Void } from '../../../components/ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,20 @@ export default async function PlanLayout({ children, params }: Props) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col md:flex-row">
+    <div className="relative flex min-h-dvh flex-col md:flex-row">
+      {/*
+        One void for the whole workspace, fixed behind everything.
+
+        `fixed` rather than `absolute` because every screen in here scrolls: an
+        absolutely positioned aurora would scroll off the top of a long plan map
+        and the rest of the page would end on flat black. `-z-10` puts it behind
+        the sidebar's own backdrop-blur, which is what lets the rail frost the
+        aurora instead of frosting nothing.
+      */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <Void variant="ambient" />
+      </div>
+
       <PlanSidebar
         plan={{
           id: plan.id,
@@ -53,7 +67,10 @@ export default async function PlanLayout({ children, params }: Props) {
         user={{ name: user.name, email: user.email, avatarUrl: user.avatarUrl }}
       />
 
-      <div className="w-full min-w-0 flex-1 md:pl-sidebar 3xl:pl-sidebar-lg">
+      {/* Padded by the same variable the rail is sized by, so collapsing it
+          widens the content in the same frame — and a server component can
+          follow client-side rail state without knowing it exists. */}
+      <div className="w-full min-w-0 flex-1 transition-[padding] duration-300 ease-out md:pl-[var(--rail-w)]">
         {/*
           `pb-tabsafe` clears the fixed mobile tab bar *and* the iOS home
           indicator, so the last item in a list is never half-covered. On

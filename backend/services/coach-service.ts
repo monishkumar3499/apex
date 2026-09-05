@@ -16,6 +16,14 @@ import type { Message } from '../ai/model-router';
 
 const HISTORY_TURNS = 6;
 const RETRIEVED_TOPICS = 3;
+/**
+ * How many of the learner's own resources to put in front of the model.
+ *
+ * The prompt asks for two or three links, so shipping ten only invites it to
+ * pick the least relevant ones — and every line here is prompt tokens on every
+ * single turn.
+ */
+const RETRIEVED_RESOURCES = 6;
 
 export interface CoachTurn {
   messages: Message[];
@@ -58,7 +66,9 @@ export async function buildCoachTurn(params: {
       .maybeSingle(),
     db
       .from('topics')
-      .select('title, summary, outcomes, keywords, mastery, idx')
+      // `id` is new: the retrieved topics' ids are what the resource lookup
+      // below keys on, so the coach can link the learner's own material.
+      .select('id, title, summary, outcomes, keywords, mastery, idx')
       .eq('plan_id', params.planId),
     db
       .from('messages')
@@ -93,6 +103,7 @@ export async function buildCoachTurn(params: {
 
   // ---- Retrieval ----------------------------------------------------------
   type TopicRow = {
+    id: string;
     title: string;
     summary: string | null;
     outcomes: string[] | null;
@@ -125,12 +136,63 @@ export async function buildCoachTurn(params: {
         .join('\n')
     : 'No plan topic closely matches this question.';
 
+  /*
+    ---- The learner's own library, for the retrieved topics ----------------
+
+    The coach could always *describe* a resource but had no way to link one, so
+    answers ended in "look it up" while the plan already held a ranked, verified
+    video for exactly that topic.
+
+    One query, scoped to at most three topic ids. Videos first, because that is
+    the order the prompt is told to cite in and the order learners reach for.
+
+    Injecting the list rather than trusting recall is also what makes the
+    citations safe: the model has no URL to hallucinate from, and the prompt
+    forbids any link not in this block.
+  */
+  const topicIds = scored.map(({ topic }) => topic.id);
+
+  const { data: resourceLinks } = topicIds.length
+    ? await db
+        .from('topic_resources')
+        .select('topic_id, rank, resources ( kind, title, url, author, duration_sec )')
+        .eq('plan_id', params.planId)
+        .in('topic_id', topicIds)
+        .order('rank', { ascending: true })
+    : { data: [] };
+
+  const titleById = new Map(scored.map(({ topic }) => [topic.id, topic.title]));
+
+  const resourceLines = ((resourceLinks ?? []) as any[])
+    .filter((link) => link.resources?.url)
+    .map((link) => {
+      const r = link.resources;
+      const watchable = r.kind === 'video' || r.kind === 'playlist';
+      const minutes = r.duration_sec ? ` ${Math.round(r.duration_sec / 60)}m` : '';
+      return {
+        watchable,
+        line: [
+          `• [${r.kind}${minutes}] ${r.title}${r.author ? ` — ${r.author}` : ''}`,
+          `  ${r.url}`,
+          `  for: ${titleById.get(link.topic_id) ?? 'this plan'}`,
+        ].join('\n'),
+      };
+    })
+    .sort((a, b) => Number(b.watchable) - Number(a.watchable))
+    .slice(0, RETRIEVED_RESOURCES)
+    .map((r) => r.line);
+
+  const resources = resourceLines.length
+    ? resourceLines.join('\n')
+    : 'Nothing in the library matches these topics.';
+
   // ---- Assemble -----------------------------------------------------------
   const context = coachContext({
     digest: plan.digest ?? plan.title,
     todayLine,
     relevantTopics,
     progressLine,
+    resources,
   });
 
   const messages: Message[] = [

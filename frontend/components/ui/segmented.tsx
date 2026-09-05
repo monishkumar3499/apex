@@ -34,9 +34,9 @@ const ITEM = cn(
   'outline-none transition-colors duration-150',
   'focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-1 focus-visible:ring-offset-bg',
   'disabled:pointer-events-none disabled:opacity-45',
-  'data-[state=off]:border-line data-[state=off]:bg-surface-2 data-[state=off]:text-ink-muted',
-  'data-[state=off]:hover:border-line-strong data-[state=off]:hover:text-ink',
-  'data-[state=on]:border-accent/50 data-[state=on]:bg-accent/12 data-[state=on]:text-accent',
+  'data-[state=off]:border-glass-edge/[0.09] data-[state=off]:bg-glass/[0.05] data-[state=off]:text-ink-muted',
+  'data-[state=off]:hover:border-accent/25 data-[state=off]:hover:text-ink',
+  'data-[state=on]:border-accent/50 data-[state=on]:bg-accent/12 data-[state=on]:text-accent data-[state=on]:shadow-glow',
   '[&_svg]:size-3.5 [&_svg]:shrink-0',
 );
 
@@ -153,7 +153,7 @@ export function SegmentedTabs<T extends string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={cn('inline-flex rounded-field border border-line bg-surface-2 p-0.5', className)}
+      className={cn('well inline-flex rounded-field p-0.5', className)}
     >
       {options.map((option) => {
         const active = option.value === value;
@@ -178,7 +178,7 @@ export function SegmentedTabs<T extends string>({
               // the delta on the compositor.
               <motion.span
                 layoutId={`segmented-${id}`}
-                className="absolute inset-0 rounded-[7px] bg-surface shadow-e1 ring-1 ring-line"
+                className="absolute inset-0 rounded-[7px] bg-glass/[0.1] shadow-glow ring-1 ring-glass-edge/[0.12] backdrop-blur-sm"
                 transition={
                   reduced ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 34 }
                 }

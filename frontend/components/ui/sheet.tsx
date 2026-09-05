@@ -26,7 +26,7 @@ const SheetOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm',
+      'fixed inset-0 z-50 bg-black/60 backdrop-blur-md',
       'data-[state=open]:animate-in data-[state=open]:fade-in-0',
       'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
       className,
@@ -38,7 +38,7 @@ SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
   cn(
-    'fixed z-50 flex flex-col gap-0 bg-surface shadow-e3 transition ease-out',
+    'fixed z-50 flex flex-col gap-0 bg-bg/85 shadow-e4 backdrop-blur-2xl transition ease-out',
     'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300',
   ),
   {
@@ -79,7 +79,7 @@ const SheetContent = React.forwardRef<
         <DialogPrimitive.Close
           className={cn(
             'absolute right-3 top-[calc(0.75rem+env(safe-area-inset-top,0px))] flex h-9 w-9 items-center justify-center',
-            'rounded-field text-ink-faint transition-colors hover:bg-surface-2 hover:text-ink',
+            'rounded-field text-ink-faint transition-colors hover:bg-glass/[0.08] hover:text-ink',
             'outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
           )}
         >

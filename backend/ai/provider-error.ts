@@ -1,3 +1,5 @@
+import type { ProviderId } from './providers';
+
 /**
  * One error type for every upstream model failure.
  *
@@ -11,7 +13,12 @@ export class ProviderError extends Error {
   constructor(
     message: string,
     readonly info: {
-      provider: 'gemini' | 'openrouter';
+      /**
+       * Which upstream refused us. Widened from the original two to the whole
+       * registry, because the router's job is now to move work *between*
+       * vendors and it cannot do that if the error cannot name one.
+       */
+      provider: ProviderId;
       model: string;
       /** 0 when the request never got a response (DNS, timeout, socket). */
       status: number;

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# APEX multi-stage Dockerfile
+# Kairo multi-stage Dockerfile
 # Next.js 15 (frontend) + the plain-TypeScript core in ../backend
 # ---------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ RUN if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KE
       echo ""; \
       echo "  docker build \\"; \
       echo "    --build-arg NEXT_PUBLIC_SUPABASE_URL=... \\"; \
-      echo "    --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=... -t apex-app ."; \
+      echo "    --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=... -t kairo-app ."; \
       echo ""; \
       exit 1; \
     fi

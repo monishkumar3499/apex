@@ -60,31 +60,75 @@ That last one matters: filling in a schema is not reasoning, and thinking costs
 about a third of the latency of a small JSON call for nothing. A slug that
 rejects the field gets one retry without it.
 
-`openrouter.ts` — the nano and chat tiers. Detects and rejects the two ways a
-free model returns nothing useful: an empty completion, and a reasoning trace
-leaked into `content` (`nvidia/nemotron-3.5-lightning:free` opens with "Here's a
-thinking process:").
+`providers.ts` — the registry: eight vendors, their endpoints, auth shapes and
+published free-tier limits. **Quota on a free tier is metered per key, per
+vendor**, so no amount of retrying makes an exhausted bucket bigger; the only
+real defence is to hold several independent buckets. Every provider is optional
+and a missing key removes its models from every chain rather than turning them
+into failed attempts.
+
+`oai.ts` — one client for all seven OpenAI-compatible providers (Groq, Cerebras,
+Mistral, Cloudflare Workers AI, Together, GitHub Models, OpenRouter). The
+awkward parts of that dialect are vendor-independent — the reasoning-token
+budget trap, providers that echo their reasoning trace into `content`
+(`nvidia/nemotron-3.5-lightning:free` opens with "Here's a thinking process:"),
+`finish_reason: "length"` on a budget the thinking pass ate, failures tunnelled
+inside a 200 — so they are handled once here rather than seven times.
+
+`keyring.ts` — key rotation. Every provider's env var accepts a
+**comma-separated list**, and each entry is an independently metered identity:
+`GROQ_API_KEY="a,b,c"` is genuinely three times the allowance, because the
+upstream has no idea the three keys belong to one deployment. Each key gets its
+own bucket, and a key that 429s is penalised alone — implicating its siblings is
+how a multi-key setup ends up no faster than a single-key one.
 
 `provider-error.ts` — one error type carrying HTTP status and the upstream's
 `Retry-After`, so the router can tell "busy, try again" from "this slug is
 retired" instead of parsing message strings.
 
-`resilience.ts` — two mechanisms that stop the pipeline rate-limiting itself:
+`resilience.ts` — four mechanisms that stop the pipeline rate-limiting itself:
 
-- **`ProviderGate`** caps how fast requests leave, per provider. Builds burst
-  naturally — every unit search at once, three blueprint shards at once — and a
-  burst is precisely what trips a per-minute limit. Start times are reserved
-  synchronously, because computing a delay and *then* recording it lets every
-  concurrent caller read the same value and fire together.
+- **`TokenBucket`** decides whether a request may leave at all, and **re-learns
+  the real ceiling** from the 429s the upstream sends back. A published limit is
+  a claim; the observed limit is a fact, and free tiers routinely enforce
+  something tighter than they document. It halves its rate on every 429 and
+  edges back up after 45s of calm — fast to cut, slow to recover, because
+  guessing too high poisons the retries landing inside the penalty window while
+  guessing too low only costs latency. It also counts *daily* spend, since a
+  per-minute bucket alone will happily burn a day's allowance inside an hour.
+- **`ProviderGate`** caps how fast requests leave and how many run at once.
+  Builds burst naturally — every unit search at once, three blueprint shards at
+  once — and a burst is precisely what trips a per-minute limit. Start times are
+  reserved synchronously, because computing a delay and *then* recording it lets
+  every concurrent caller read the same value and fire together.
+- **`FairQueue`** decides *whose* request leaves next: round-robin over
+  learners, FIFO within one learner. One six-month build submits several hundred
+  calls, and under FIFO nineteen other people's single drill request all wait
+  behind it. Round-robin makes wait time depend on how many *people* are active
+  rather than on how much the busiest of them submitted.
 - **`ModelBreaker`** remembers which models are unusable and for how long,
   honouring `Retry-After` exactly when given. A rate-limited model is *skipped*,
-  not retried; without this a three-model chain still spends its whole budget on
+  not retried; without this a ten-model chain still spends its whole budget on
   the first model.
 
-`model-router.ts` — tiers by job size, and a **cross-provider fallback chain**
-per tier. Crossing providers is the point: free tiers do not fail one model at a
-time, so a chain of three Gemini slugs is a chain of one. Also holds the
-`TokenLedger`, so a build's cost is measured rather than estimated.
+`model-router.ts` — tiers by job size, and an 8–10 model **cross-vendor fallback
+chain** per tier. Crossing vendors is the point: free tiers do not fail one
+model at a time, so a chain of three Gemini slugs is a chain of one. Chains are
+ordered by *cheapest bucket to refill*, which is why the volume tiers lead on
+Groq and Cerebras (~13,000 free requests/day each) and OpenRouter is last
+everywhere (50/day under 10 credits).
+
+Two failures are kept distinct, and conflating them was the flaw in the previous
+version: a **model** failure opens that model's breaker, while a **saturated
+provider** opens nothing. The model did nothing wrong, and penalising it would
+remove it from the chain for the next learner too. So `orderByAvailability`
+sorts by *model cooldown + provider headroom*, which lets a slightly
+less-preferred model on an idle vendor beat a perfect model on a busy one.
+
+`model-router.ts` also holds the `TokenLedger`, so a build's cost is measured
+rather than estimated, and `providerHealth()`, which answers "why is this build
+slow" in one request — bucket count, per-key headroom, queued learners, and
+which models are cooling down.
 
 `json.ts` — progressive JSON repair (fences, smart quotes, trailing commas,
 truncation), with the repair pass pinned to the tier that produced the output.

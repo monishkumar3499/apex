@@ -37,7 +37,7 @@ export function Stat({
             tone === 'warn' && 'bg-warn/12 text-warn',
             tone === 'success' && 'bg-success/12 text-success',
             tone === 'danger' && 'bg-danger/12 text-danger',
-            tone === 'default' && 'bg-surface-3 text-ink-faint',
+            tone === 'default' && 'bg-glass/[0.08] text-ink-faint ring-1 ring-inset ring-glass-edge/[0.09]',
           )}
         >
           {icon}

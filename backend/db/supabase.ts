@@ -24,7 +24,7 @@ export function admin(): SupabaseClient {
 
   cached = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { 'x-apex-role': 'service' } },
+    global: { headers: { 'x-kairo-role': 'service' } },
   });
 
   return cached;

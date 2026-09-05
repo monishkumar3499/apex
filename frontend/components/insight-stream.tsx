@@ -92,7 +92,7 @@ export function InsightStream({
   return (
     <div
       className={cn(
-        'flex gap-3 rounded-2xl border border-line bg-surface-2/70 px-4 py-4 backdrop-blur-sm',
+        'glass flex gap-3 rounded-2xl px-4 py-4',
         // Reserved height, so the panel never resizes as the text changes.
         compact ? 'min-h-[5.5rem]' : 'min-h-[7rem] sm:min-h-[6.5rem]',
         className,

@@ -3,36 +3,70 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   APEX design tokens
+   Kairo — Aurora Glass
 
-   One accent (amber) carries every interactive and "in progress" state.
-   Semantic hues are reserved for meaning — emerald for done, rose for behind,
-   sky for review — so colour always tells the learner something.
+   καιρός: the opportune moment. The product's one idea is time — capacity-aware
+   scheduling, reviews that return at 2/7/21 days, mocks spread across the
+   timeline — so the visual language is built from time made visible: orbits,
+   depth, drifting light.
 
-   Channels are stored as raw RGB triples so Tailwind can apply opacity.
+   THREE LAYERS, always in this order, back to front:
+
+     0  THE VOID      a near-black indigo ground with a slow aurora drifting
+                      through it. Never interactive, never in focus.
+     1  THE GLASS     frosted panels floating above the void. Everything the
+                      learner reads lives here, and it is deliberately the only
+                      layer with a hard edge.
+     2  THE LIGHT     accent bloom, specular sweeps, orbit rails. Applied to
+                      exactly one element per screen — whatever is live.
+
+   The rule that keeps this from becoming decoration: **depth encodes state.**
+   Something nearer the viewer is more urgent. A card that lifts is a card you
+   are meant to act on. Blur means "behind, later, not now" — never merely
+   "pretty". Glass that carries no information is a performance cost with no
+   argument for it.
+
+   Channels are raw RGB triples so Tailwind can apply opacity to any of them.
    ========================================================================== */
 
 @layer base {
+  /* ---------------------------------------------------------------- light
+     Cool porcelain. Same structure, inverted ground: the aurora becomes a
+     faint violet wash rather than a glow, and glass frosts *down* into white
+     instead of up out of black.
+     ------------------------------------------------------------------- */
   :root {
-    --bg:              250 250 249;   /* warm off-white, easier than pure #fff */
-    --bg-subtle:       245 245 244;
+    --bg:              247 247 251;
+    --bg-subtle:       242 242 248;
     --surface:         255 255 255;
-    --surface-2:       250 250 249;
-    --surface-3:       245 245 244;
-    --surface-sunken:  237 235 233;
-    --border:          231 229 228;
-    --border-strong:   214 211 209;
+    --surface-2:       249 249 253;
+    --surface-3:       243 243 249;
+    --surface-sunken:  234 234 244;
+    --border:          228 228 240;
+    --border-strong:   208 208 227;
 
-    --text:            28 25 23;
-    --text-muted:      120 113 108;
-    --text-faint:      168 162 158;
+    --text:            20 20 33;
+    --text-muted:      88 90 114;
+    --text-faint:      136 139 162;
 
-    --accent:          180 83 9;      /* amber-700 — passes AA on white */
-    --accent-hover:    146 64 14;
-    --accent-soft:     254 243 199;
+    /* Violet, pinned to clear AA as *text* on the page ground. */
+    --accent:          88 48 235;
+    --accent-hover:    68 32 205;
+    --accent-soft:     237 233 254;
     --accent-text:     255 255 255;
-    /* Graphics only. See the `accent.vivid` note in tailwind.config.js. */
-    --accent-vivid:    217 119 6;
+    /*
+      Graphics-only violet, brighter than `accent`.
+
+      Fills, strokes and glyphs above 24px are held to 3:1 rather than 4.5:1,
+      so they can carry saturation the text colour cannot. Never body text.
+    */
+    --accent-vivid:    109 71 245;
+
+    /* Second and third accents. Cyan carries data and progress; magenta is
+       reserved for the rarest highlight and is never load-bearing. */
+    --accent-2:        8 145 178;
+    --accent-2-vivid:  6 182 212;
+    --accent-3:        190 24 93;
 
     --success:         4 120 87;
     --success-soft:    209 250 229;
@@ -43,43 +77,96 @@
     --info:            3 105 161;
     --info-soft:       224 242 254;
 
-    --ring:            180 83 9;
-    --shadow-color:    28 25 23;
+    --ring:            88 48 235;
+    --shadow-color:    24 20 50;
+
+    /* Glass. In light mode the panel is *more* opaque than in dark: frosted
+       white over white needs a visible edge to read as a surface at all. */
+    --glass-bg:        255 255 255;
+    --glass-alpha:     0.72;
+    /*
+      The hairline / neutral-tint channel, and it is the one glass token that
+      must flip with the theme.
+
+      `--glass-bg` is always white because it is a *specular highlight* — light
+      falling on a bevel. `--glass-edge` does the opposite job: it is the tint
+      used for translucent fills and 1px borders, so it has to darken whatever
+      it sits on. White at 8% lightens a dark panel exactly as intended and is
+      completely invisible on a white one, which is how every
+      `border-glass-edge` utility silently disappeared in light mode.
+    */
+    --glass-edge:      20 20 33;
+    --glass-blur:      20px;
+
+    /* Aurora stops, sampled by the void layer. */
+    --aurora-1:        124 92 255;
+    --aurora-2:        34 211 238;
+    --aurora-3:        236 72 153;
+    --aurora-alpha:    0.10;
 
     color-scheme: light;
   }
 
+  /* ----------------------------------------------------------------- dark
+     The default, and the mode this system was designed in. Kairo is used at
+     6am and at midnight; a study surface should not be a light source.
+     ------------------------------------------------------------------- */
   .dark {
-    --bg:              9 12 20;       /* deep navy-black study surface */
-    --bg-subtle:       13 17 27;
-    --surface:         17 23 38;
-    --surface-2:       22 30 48;
-    --surface-3:       29 39 61;
-    --surface-sunken:  13 18 30;
-    --border:          33 44 68;
-    --border-strong:   51 65 95;
+    --bg:              7 7 15;
+    --bg-subtle:       10 10 20;
+    --surface:         14 14 26;
+    --surface-2:       19 19 33;
+    --surface-3:       27 27 45;
+    --surface-sunken:  10 10 19;
+    --border:          35 35 57;
+    --border-strong:   54 54 85;
 
-    --text:            232 237 246;
-    --text-muted:      139 152 176;
-    --text-faint:      98 110 134;
+    --text:            236 237 245;
+    --text-muted:      155 160 188;
+    --text-faint:      104 109 136;
 
-    --accent:          245 165 36;    /* amber — the single point of warmth */
-    --accent-hover:    255 190 84;
-    --accent-soft:     58 41 11;
-    --accent-text:     14 18 28;
-    --accent-vivid:    250 180 60;
+    --accent:          141 110 255;
+    --accent-hover:    170 148 255;
+    --accent-soft:     30 24 58;
+    --accent-text:     8 6 20;
+    --accent-vivid:    124 92 255;
+
+    --accent-2:        34 211 238;
+    --accent-2-vivid:  103 232 249;
+    --accent-3:        244 114 182;
 
     --success:         52 211 153;
-    --success-soft:    6 44 36;
+    --success-soft:    5 46 38;
     --warn:            251 191 36;
     --warn-soft:       56 38 6;
     --danger:          251 113 133;
-    --danger-soft:     60 15 27;
+    --danger-soft:     62 15 29;
     --info:            56 189 248;
     --info-soft:       8 40 58;
 
-    --ring:            245 165 36;
+    --ring:            141 110 255;
     --shadow-color:    0 0 0;
+
+    --glass-bg:        255 255 255;
+    /*
+      0.07, not 0.045.
+      
+      At 0.045 the panel is 95% transparent, which looks superb over a flat
+      ground and fails over a busy one: on the landing hero the orbit field's
+      nodes and rings read straight through the preview card and land on top of
+      its text. Glass has to stay a surface you read ON, not a window you read
+      THROUGH — this is the lowest value where the aurora is still clearly
+      present behind the panel but text keeps its contrast.
+    */
+    --glass-alpha:     0.07;
+    /* White in dark mode: here the tint and the highlight are the same colour. */
+    --glass-edge:      255 255 255;
+    --glass-blur:      28px;
+
+    --aurora-1:        124 92 255;
+    --aurora-2:        34 211 238;
+    --aurora-3:        236 72 153;
+    --aurora-alpha:    0.20;
 
     color-scheme: dark;
   }
@@ -88,10 +175,65 @@
     border-color: rgb(var(--border));
   }
 
+  /*
+    The plan workspace rail's width, as a variable.
+
+    It lives here rather than in the sidebar component because the *layout*
+    needs it too — the content column is padded by exactly this much, and that
+    layout is a server component which cannot see the sidebar's React state.
+    A variable on the root element is the one channel both can read.
+  */
+  :root {
+    --rail-w: 15.5rem;
+  }
+
+  :root[data-rail='mini'] {
+    --rail-w: 4.25rem;
+  }
+
+  /*
+    Chrome to subtract from `100dvh` for a workspace route that wants to fill
+    the viewport — currently only the coach, whose composer must sit at the
+    bottom of the screen rather than floating above a band of dead space.
+
+    It is a variable because the number is a sum of things declared in three
+    different files: the plan layout's vertical padding, the mobile plan
+    header, and the mobile tab bar. Spelling it out per breakpoint here is the
+    only place all three are visible at once.
+
+      mobile   3.5rem header + 1.5rem padding + 4rem tab bar + 0.5rem gap
+      sm       as mobile, with 2rem layout padding
+      md+      no mobile header, no tab bar: 2.5rem + 4rem padding + gap
+  */
+  :root {
+    --workspace-chrome: 9.5rem;
+  }
+
+  @media (min-width: 640px) {
+    :root {
+      --workspace-chrome: 10rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --workspace-chrome: 7.5rem;
+    }
+  }
+
+  @media (min-width: 1800px) {
+    :root {
+      --rail-w: 17.5rem;
+    }
+    :root[data-rail='mini'] {
+      --rail-w: 4.25rem;
+    }
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
     /* Keeps a sticky header from covering the target of an in-page anchor. */
-    scroll-padding-top: 4.5rem;
+    scroll-padding-top: 5rem;
     /* iOS Safari zooms the page when a control smaller than 16px is focused,
        and never zooms back out. Sizing inputs at 16px on small screens is the
        only reliable fix; `text-size-adjust` stops the rest of the page from
@@ -103,7 +245,7 @@
   body {
     background-color: rgb(var(--bg));
     color: rgb(var(--text));
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     /* A single element overflowing its container should not make the whole
@@ -136,7 +278,8 @@
   }
 
   ::selection {
-    background-color: rgb(var(--accent) / 0.25);
+    background-color: rgb(var(--accent) / 0.3);
+    color: rgb(var(--text));
   }
 
   :focus-visible {
@@ -157,76 +300,381 @@
     border: 3px solid rgb(var(--bg));
     border-radius: 999px;
   }
-  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--text-faint)); }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent) / 0.7); }
 }
 
 @layer components {
-  /* ------------------------------------------------------------------
-     Data-viz ramp
+  /* ==================================================================
+     LAYER 0 — THE VOID
+     ================================================================== */
 
-     A single-hue amber sequential scale, low → high magnitude. Both modes
-     were generated at a fixed OKLCH hue (75°) and validated: monotone
-     lightness, ≥0.06 ΔL between adjacent steps, ≤1° hue spread, and a
-     light-end step that clears 2:1 against its own surface. Never edit a
-     step by eye — regenerate and re-validate the whole ramp.
-     ------------------------------------------------------------------ */
-  .viz-heat {
-    --heat-0: rgb(var(--surface-3));
-    --heat-1: #efa72e;
-    --heat-2: #c78b24;
-    --heat-3: #a16f1b;
-    --heat-4: #7c5512;
+  /**
+   * The aurora field.
+   *
+   * Four offset radial gradients on one element, each drifting on its own
+   * period so the composite never visibly loops. Painted as a background
+   * rather than as child elements: a background cannot be hit-tested, cannot
+   * take focus, and cannot appear in the accessibility tree, all of which are
+   * true of decoration and none of which are true of a div.
+   *
+   * `filter: blur()` is deliberately absent. Blurring a full-viewport element
+   * costs a repaint of the whole compositor layer every frame; large soft
+   * gradient stops give the same look for free.
+   */
+  .aurora {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    /* Contain paint so the animation never invalidates anything outside. */
+    contain: strict;
   }
 
-  .dark .viz-heat {
-    --heat-1: #6e4b0e;
-    --heat-2: #996a19;
-    --heat-3: #c78b24;
-    --heat-4: #f7ad30;
+  .aurora::before,
+  .aurora::after {
+    content: '';
+    position: absolute;
+    /* Oversized so the drift never exposes an edge. */
+    inset: -35%;
+    background-repeat: no-repeat;
+    will-change: transform;
   }
 
-  /* Layered elevation — a hairline plus a soft drop, never a heavy box. */
+  .aurora::before {
+    background-image:
+      radial-gradient(38% 42% at 22% 18%, rgb(var(--aurora-1) / var(--aurora-alpha)), transparent 70%),
+      radial-gradient(32% 36% at 78% 26%, rgb(var(--aurora-2) / calc(var(--aurora-alpha) * 0.75)), transparent 70%);
+    animation: aurora-drift-a 34s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+
+  .aurora::after {
+    background-image:
+      radial-gradient(34% 38% at 68% 76%, rgb(var(--aurora-1) / calc(var(--aurora-alpha) * 0.8)), transparent 72%),
+      radial-gradient(26% 30% at 30% 88%, rgb(var(--aurora-3) / calc(var(--aurora-alpha) * 0.45)), transparent 70%);
+    animation: aurora-drift-b 46s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  }
+
+  /**
+   * Film grain.
+   *
+   * An inline SVG feTurbulence, so it costs one tiny data URI rather than an
+   * image request. Its job is not texture for its own sake: large flat
+   * gradients band badly on 8-bit panels, and a little noise dithers those
+   * bands away. Very low opacity — visible as smoothness, not as grain.
+   */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /**
+   * The star field / depth grid used behind hero content.
+   *
+   * A perspective-warped grid reads as "receding into distance" and gives the
+   * flat void a floor, which is what makes the glass above it look like it is
+   * actually floating rather than just being a lighter rectangle.
+   */
+  .depth-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgb(var(--accent) / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--accent) / 0.07) 1px, transparent 1px);
+    background-size: 56px 56px;
+    /* Fade it out before it reaches the content, or the grid competes with
+       the text sitting on top of it. */
+    -webkit-mask-image: radial-gradient(80% 60% at 50% 100%, #000, transparent 72%);
+    mask-image: radial-gradient(80% 60% at 50% 100%, #000, transparent 72%);
+    transform: perspective(680px) rotateX(62deg) scale(1.9);
+    transform-origin: 50% 100%;
+  }
+
+  /* ==================================================================
+     LAYER 1 — THE GLASS
+     ================================================================== */
+
+  /**
+   * The base panel.
+   *
+   * Three things together are what make glass read as glass, and dropping any
+   * one of them makes it read as a grey box:
+   *
+   *   1. a backdrop blur, so what is behind it is *present but unreadable*
+   *   2. a bright hairline on the top edge only — specular highlight from a
+   *      light source above, which is what tells the eye there is a bevel
+   *   3. a shadow that is offset downward, so the panel has somewhere to be
+   *
+   * `background-color` carries a real fallback value. `backdrop-filter` is
+   * unsupported on some older Android WebViews, and without an opaque-enough
+   * base those users get unreadable text over the aurora.
+   */
+  .glass {
+    position: relative;
+    background-color: rgb(var(--glass-bg) / var(--glass-alpha));
+    border: 1px solid rgb(var(--glass-edge) / 0.09);
+    box-shadow:
+      0 1px 0 0 rgb(var(--glass-bg) / 0.07) inset,
+      0 1px 2px rgb(var(--shadow-color) / 0.10),
+      0 12px 32px -12px rgb(var(--shadow-color) / 0.35);
+  }
+
+  /* Split out so `.glass` still paints correctly where blur is unsupported. */
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .glass {
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+      backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    }
+  }
+
+  /* Light mode needs a real border: white-on-white has no edge otherwise. */
+  :root:not(.dark) .glass {
+    border-color: rgb(var(--border));
+  }
+
+  /**
+   * The raised variant — the *one* panel on a screen that is being acted on.
+   *
+   * Reserved deliberately. If three things on a screen are raised, nothing is.
+   */
+  .glass-raised {
+    background-color: rgb(var(--glass-bg) / calc(var(--glass-alpha) * 1.6));
+    border: 1px solid rgb(var(--glass-edge) / 0.13);
+    box-shadow:
+      0 1px 0 0 rgb(var(--glass-bg) / 0.11) inset,
+      0 2px 4px rgb(var(--shadow-color) / 0.12),
+      0 24px 60px -18px rgb(var(--shadow-color) / 0.5),
+      0 0 0 1px rgb(var(--accent) / 0.08);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .glass-raised {
+      -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.4)) saturate(160%);
+      backdrop-filter: blur(calc(var(--glass-blur) * 1.4)) saturate(160%);
+    }
+  }
+
+  :root:not(.dark) .glass-raised {
+    border-color: rgb(var(--border-strong));
+  }
+
+  /**
+   * Back-compat aliases.
+   *
+   * ~40 components were written against `.surface` and `.surface-raised`
+   * before this redesign. Re-pointing those names at the glass system
+   * re-themes the entire app from one file, which is the only reason a
+   * redesign of this size is safe to make in one pass.
+   */
   .surface {
-    background-color: rgb(var(--surface));
-    border: 1px solid rgb(var(--border));
-    box-shadow: 0 1px 2px rgb(var(--shadow-color) / 0.04);
+    position: relative;
+    background-color: rgb(var(--glass-bg) / var(--glass-alpha));
+    border: 1px solid rgb(var(--glass-edge) / 0.09);
+    box-shadow:
+      0 1px 0 0 rgb(var(--glass-bg) / 0.07) inset,
+      0 1px 2px rgb(var(--shadow-color) / 0.10),
+      0 12px 32px -12px rgb(var(--shadow-color) / 0.35);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .surface {
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+      backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    }
+  }
+
+  :root:not(.dark) .surface {
+    border-color: rgb(var(--border));
   }
 
   .surface-raised {
-    background-color: rgb(var(--surface));
-    border: 1px solid rgb(var(--border));
+    position: relative;
+    background-color: rgb(var(--glass-bg) / calc(var(--glass-alpha) * 1.6));
+    border: 1px solid rgb(var(--glass-edge) / 0.13);
     box-shadow:
-      0 1px 2px rgb(var(--shadow-color) / 0.06),
-      0 8px 24px -8px rgb(var(--shadow-color) / 0.10);
+      0 1px 0 0 rgb(var(--glass-bg) / 0.11) inset,
+      0 2px 4px rgb(var(--shadow-color) / 0.12),
+      0 24px 60px -18px rgb(var(--shadow-color) / 0.5);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .surface-raised {
+      -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.4)) saturate(160%);
+      backdrop-filter: blur(calc(var(--glass-blur) * 1.4)) saturate(160%);
+    }
+  }
+
+  :root:not(.dark) .surface-raised {
+    border-color: rgb(var(--border-strong));
+  }
+
+  /**
+   * A specular sweep across a panel on hover.
+   *
+   * This is the single gesture that sells glass as a material: light moving
+   * across a surface tells you the surface has a shape. Pointer-only, because
+   * on touch there is no hover to trigger it and a permanently-swept card just
+   * looks broken.
+   */
+  @media (hover: hover) and (pointer: fine) {
+    .sheen {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .sheen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 32%,
+        rgb(var(--glass-bg) / 0.12) 48%,
+        rgb(var(--glass-bg) / 0.02) 56%,
+        transparent 68%
+      );
+      background-size: 240% 100%;
+      background-position: 140% 0;
+      transition: opacity 0.25s ease-out, background-position 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sheen:hover::after {
+      opacity: 1;
+      background-position: -40% 0;
+    }
+  }
+
+  /* Inset wells: progress tracks, empty slots, code blocks. */
+  .well {
+    background-color: rgb(var(--surface-sunken) / 0.7);
+    box-shadow:
+      0 1px 2px rgb(var(--shadow-color) / 0.22) inset,
+      0 1px 0 0 rgb(var(--glass-bg) / 0.04);
   }
 
   /* Focus surface: the reading pane during a study session. */
   .focus-pane {
     background:
-      radial-gradient(120% 90% at 50% -20%, rgb(var(--accent) / 0.07), transparent 55%),
-      rgb(var(--surface));
+      radial-gradient(120% 90% at 50% -20%, rgb(var(--accent) / 0.12), transparent 58%),
+      radial-gradient(80% 60% at 85% 10%, rgb(var(--accent-2) / 0.06), transparent 60%),
+      rgb(var(--surface) / 0.85);
   }
 
   .hairline {
-    background-image: linear-gradient(to right, transparent, rgb(var(--border)), transparent);
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      rgb(var(--accent) / 0.35),
+      rgb(var(--border-strong)),
+      transparent
+    );
   }
 
-  /* ------------------------------------------------------------------
-     The spine
+  /* ==================================================================
+     LAYER 2 — THE LIGHT
+     ================================================================== */
 
-     APEX's one signature graphic: a vertical rail with nodes on it, used
-     wherever the product shows an ordered route through time — today's
-     items, the build stages, the intake steps, the landing hero.
+  /**
+   * Accent bloom behind the live element.
+   *
+   * Sits *behind* its parent via a negative z-index on a pseudo-element, so it
+   * glows around the panel rather than washing out the text inside it. The
+   * parent needs `isolation: isolate` (`.bloom` sets it) or the negative index
+   * escapes to the page background.
+   */
+  .bloom {
+    position: relative;
+    isolation: isolate;
+  }
 
-     It is drawn as a background on the list container rather than as a
-     per-row pseudo-element, so the rail is continuous and does not break
-     across gaps between rows.
-     ------------------------------------------------------------------ */
-  .spine {
+  .bloom::before {
+    content: '';
+    position: absolute;
+    inset: -22%;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(60% 60% at 50% 50%, rgb(var(--accent) / 0.3), transparent 72%);
+    filter: blur(22px);
+  }
+
+  /**
+   * Iridescent text.
+   *
+   * Used for exactly one phrase per screen. A background-clipped gradient is
+   * the only way to get a multi-stop fill on glyphs, and the fallback
+   * `color` matters: if `background-clip: text` fails, transparent text is
+   * invisible text.
+   */
+  .holo {
+    color: rgb(var(--accent));
+    background-image: linear-gradient(
+      100deg,
+      rgb(var(--accent-vivid)),
+      rgb(var(--accent-2-vivid)) 46%,
+      rgb(var(--accent-3)) 74%,
+      rgb(var(--accent-vivid))
+    );
+    background-size: 260% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: holo-shift 9s linear infinite;
+  }
+
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .holo {
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+  }
+
+  /** A hairline that is itself iridescent. Section dividers, card top edges. */
+  .holo-rule {
+    height: 1px;
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      rgb(var(--accent-vivid) / 0.5) 30%,
+      rgb(var(--accent-2-vivid) / 0.5) 55%,
+      transparent
+    );
+  }
+
+  /* ==================================================================
+     THE ORBIT — Kairo's signature graphic
+     ================================================================== */
+
+  /**
+   * The orbit rail.
+   *
+   * Kairo's one signature graphic, used wherever the product shows an ordered
+   * route through time: today's items, the build stages, the intake steps, the
+   * plan map, the landing hero.
+   *
+   * It replaces the old flat "spine" rail with the same idea rendered with
+   * depth — the line now carries a travelling light and its nodes sit *on* it
+   * rather than beside it, so an ordered list reads as a trajectory.
+   *
+   * Drawn as a background on the list container rather than as a per-row
+   * pseudo-element, so the rail is continuous and does not break across the
+   * gaps between rows.
+   */
+  .spine,
+  .orbit-rail {
     position: relative;
   }
 
-  .spine::before {
+  .spine::before,
+  .orbit-rail::before {
     content: '';
     position: absolute;
     left: var(--spine-x, 0.9375rem);
@@ -237,7 +685,8 @@
     background: linear-gradient(
       to bottom,
       transparent,
-      rgb(var(--border-strong)) 8%,
+      rgb(var(--accent) / 0.45) 8%,
+      rgb(var(--border-strong)) 40%,
       rgb(var(--border-strong)) 92%,
       transparent
     );
@@ -245,7 +694,8 @@
   }
 
   /* The build screen's rail, with a highlight travelling down it. */
-  .spine-live::after {
+  .spine-live::after,
+  .orbit-rail-live::after {
     content: '';
     position: absolute;
     left: var(--spine-x, 0.9375rem);
@@ -253,7 +703,14 @@
     width: 2px;
     height: 25%;
     border-radius: 999px;
-    background: linear-gradient(to bottom, transparent, rgb(var(--accent-vivid)), transparent);
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--accent-vivid)),
+      rgb(var(--accent-2-vivid)),
+      transparent
+    );
+    box-shadow: 0 0 12px 2px rgb(var(--accent) / 0.5);
     animation: spine-travel 2.6s ease-in-out infinite;
     pointer-events: none;
   }
@@ -263,9 +720,107 @@
     background-color: rgb(var(--bg));
     box-shadow: 0 0 0 4px rgb(var(--bg));
   }
+
+  /* The live node gets the bloom, so "where am I" is answerable at a glance. */
+  .spine-node-live {
+    box-shadow:
+      0 0 0 4px rgb(var(--bg)),
+      0 0 0 5px rgb(var(--accent) / 0.35),
+      0 0 16px 2px rgb(var(--accent) / 0.5);
+  }
+
+  /**
+   * Concentric orbit rings.
+   *
+   * The literal rendering of the name: topics ride rings and swing back on
+   * their review dates. Used as a decorative anchor on the hero, the build
+   * screen and empty states. Each ring counter-rotates against its neighbour
+   * so the composite reads as a system rather than a spinning wheel.
+   */
+  .orbit-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border: 1px solid rgb(var(--accent) / 0.16);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .orbit-ring-lit {
+    border-color: rgb(var(--accent) / 0.3);
+    box-shadow:
+      0 0 24px -6px rgb(var(--accent) / 0.35),
+      0 0 24px -6px rgb(var(--accent) / 0.2) inset;
+  }
+
+  /* ------------------------------------------------------------------
+     Data-viz ramp
+
+     A two-hue sequential scale, low → high magnitude, running violet → cyan.
+     Both modes were generated at fixed OKLCH endpoints and validated:
+     monotone lightness, >=0.06 delta-L between adjacent steps, and a light-end
+     step that clears 2:1 against its own surface. Never edit a step by eye —
+     regenerate and re-validate the whole ramp.
+     ------------------------------------------------------------------ */
+  .viz-heat {
+    --heat-0: rgb(var(--surface-3));
+    --heat-1: #c9c2fb;
+    --heat-2: #9d8bf5;
+    --heat-3: #6f57e0;
+    --heat-4: #4a32b0;
+  }
+
+  .dark .viz-heat {
+    --heat-0: rgb(var(--surface-3));
+    --heat-1: #33296b;
+    --heat-2: #5b46b8;
+    --heat-3: #8b6cff;
+    --heat-4: #b9a5ff;
+  }
 }
 
 @layer utilities {
+  /* ------------------------------------------------------------------
+     3D primitives
+
+     CSS 3D rather than WebGL, on purpose. Kairo is opened every day, often on
+     a mid-range phone, and a GPU-heavy canvas that must boot before the
+     learner can see today's tasks is the wrong trade for a study tool. These
+     transforms run on the compositor, cost no JavaScript, and degrade to flat
+     without breaking anything.
+     ------------------------------------------------------------------ */
+
+  .flat-3d      { transform-style: flat; }
+  .preserve-3d  { transform-style: preserve-3d; }
+  .backface-hidden {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  /**
+   * A card that tilts toward the pointer.
+   *
+   * The rotation itself is driven from JS (`components/ui/tilt.tsx`) writing
+   * --rx/--ry, because a pointer position cannot be expressed in CSS. Keeping
+   * the *transform* here means the animation stays on the compositor and the
+   * JS only ever touches two custom properties.
+   */
+  .tilt-3d {
+    transform:
+      perspective(var(--tilt-perspective, 900px))
+      rotateX(var(--rx, 0deg))
+      rotateY(var(--ry, 0deg))
+      translate3d(0, 0, var(--tz, 0));
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  /* Layer inside a tilted card, so its children separate in depth. */
+  .layer-1 { transform: translateZ(18px); }
+  .layer-2 { transform: translateZ(36px); }
+  .layer-3 { transform: translateZ(60px); }
+
   /* ------------------------------------------------------------------
      Safe areas
 
@@ -283,7 +838,7 @@
      Deliberately NOT named pb-tabbar: the `tabbar` spacing key already
      generates a .pb-tabbar of its own, and which of the two wins would then
      depend on stylesheet order. */
-  .pb-tabsafe { padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px)); }
+  .pb-tabsafe { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
 
   /* A horizontally scrolling region that still feels native on touch:
      momentum scrolling, snap points, and no visible scrollbar. */
@@ -310,23 +865,79 @@
     background: linear-gradient(
       90deg,
       rgb(var(--surface-2)) 0%,
-      rgb(var(--surface-3)) 50%,
+      rgb(var(--accent) / 0.10) 50%,
       rgb(var(--surface-2)) 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.6s linear infinite;
   }
+
+  /* Hides an element from the a11y tree AND from the pointer, for decoration
+     that still needs layout space. */
+  .decorative {
+    pointer-events: none;
+    user-select: none;
+  }
 }
+
+/* ==========================================================================
+   Keyframes
+
+   Declared outside @layer so they are never purged by a layer reorder.
+   ========================================================================== */
 
 @keyframes shimmer {
   from { background-position: 200% 0; }
   to   { background-position: -200% 0; }
 }
 
+@keyframes aurora-drift-a {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(4%, -3%, 0) scale(1.12); }
+  100% { transform: translate3d(-3%, 4%, 0) scale(1.04); }
+}
+
+@keyframes aurora-drift-b {
+  0%   { transform: translate3d(0, 0, 0) scale(1.06); }
+  50%  { transform: translate3d(-5%, 3%, 0) scale(1); }
+  100% { transform: translate3d(3%, -4%, 0) scale(1.14); }
+}
+
+@keyframes holo-shift {
+  from { background-position: 0% 0; }
+  to   { background-position: 260% 0; }
+}
+
+@keyframes spine-travel {
+  0%   { transform: translateY(-120%); }
+  100% { transform: translateY(420%); }
+}
+
+/* ==========================================================================
+   Reduced motion
+
+   Everything above either explains a spatial relationship or confirms an
+   action. With the OS setting on, the learner gets the final state
+   immediately — but note this is a blunt instrument by design: it kills
+   *every* animation, including ones we might consider safe, because a
+   per-animation allowlist is a thing that rots.
+   ========================================================================== */
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* A tilt frozen mid-rotation looks like a rendering bug rather than a
+     disabled effect, so flatten it outright. */
+  .tilt-3d {
+    transform: none !important;
+  }
+
+  .depth-grid {
+    display: none;
   }
 }

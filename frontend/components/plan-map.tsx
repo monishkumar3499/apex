@@ -3,12 +3,14 @@
 import * as React from 'react';
 import Link from 'next/link';
 import {
-  ChevronRight, Timer, Brain, Layers, Circle, CheckCircle2, Target, Sparkles, BookMarked,
+  ChevronRight, Timer, Brain, Layers, Circle, CheckCircle2, Target, Sparkles,
+  BookMarked, Play, Library,
 } from 'lucide-react';
 import {
   Card, Badge, Progress, Button, EmptyState, PageHeader, SectionHeader, Stat,
   Accordion, AccordionItem, AccordionTrigger, AccordionContent, Hint, FadeIn,
 } from './ui';
+import { ResourcePanel, type Resource } from './resource-panel';
 import { cn, formatMinutes, formatDate, pct } from '../lib/utils';
 
 export interface MapTopic {
@@ -24,7 +26,14 @@ export interface MapTopic {
   total: number;
   firstDay: number | null;
   firstDate: string | null;
-  resourceCount: number;
+  /**
+   * The topic's shelf, best-ranked first.
+   *
+   * Was a bare `resourceCount`. A number told the learner material existed and
+   * gave them no way to open it, which is the worst of both — it advertises
+   * something the screen cannot deliver.
+   */
+  resources: Resource[];
   scheduled: boolean;
 }
 
@@ -148,7 +157,7 @@ export function PlanMap({
                         ? 'bg-success/15 text-success'
                         : unitProgress > 0
                           ? 'bg-accent/12 text-accent'
-                          : 'bg-surface-3 text-ink-faint',
+                          : 'bg-glass/[0.08] text-ink-faint',
                     )}
                   >
                     {unit.idx + 1}
@@ -164,7 +173,7 @@ export function PlanMap({
                     </span>
 
                     {unit.summary && (
-                      <span className="mt-1 line-clamp-1 block text-xs text-ink-muted">
+                      <span className="mt-1 line-clamp-1 block font-reading text-xs text-ink-muted">
                         {unit.summary}
                       </span>
                     )}
@@ -263,13 +272,29 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
   const complete = topic.total > 0 && topic.done === topic.total;
   const panelId = `topic-${topic.id}`;
 
+  /*
+    Videos first. The map is where a learner decides what to do next, and the
+    decision is usually "is there something I can watch on this". Ordering by
+    curation rank alone buried the video under a docs page about half the time.
+  */
+  const resources = React.useMemo(
+    () =>
+      [...topic.resources].sort((a, b) => {
+        const watchable = (r: Resource) => (r.kind === 'video' || r.kind === 'playlist' ? 0 : 1);
+        return watchable(a) - watchable(b);
+      }),
+    [topic.resources],
+  );
+
+  const hasVideo = resources.some((r) => r.kind === 'video' || r.kind === 'playlist');
+
   return (
     <li className="border-b border-line last:border-0">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls={panelId}
-        className="flex min-h-touch w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60 sm:px-5"
+        className="flex min-h-touch w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors hover:bg-glass/[0.08] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/60 sm:px-5"
       >
         {complete ? (
           <CheckCircle2 className="h-4 w-4 shrink-0 text-success" aria-hidden />
@@ -289,10 +314,12 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
               <Timer className="h-2.5 w-2.5" />
               {formatMinutes(topic.estMinutes)}
             </span>
-            {topic.resourceCount > 0 && (
+            {topic.resources.length > 0 && (
               <span className="flex items-center gap-1">
-                <BookMarked className="h-2.5 w-2.5" />
-                {topic.resourceCount}
+                {/* A play glyph when something is watchable, because "there is a
+                    video here" is the fact a learner scans for. */}
+                {hasVideo ? <Play className="h-2.5 w-2.5" /> : <BookMarked className="h-2.5 w-2.5" />}
+                {topic.resources.length}
               </span>
             )}
             {topic.firstDate && <span>starts {formatDate(topic.firstDate)}</span>}
@@ -314,10 +341,12 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
       {open && (
         <div
           id={panelId}
-          className="animate-in fade-in-0 slide-in-from-top-1 border-t border-line bg-surface-2/50 px-4 py-4 duration-200 sm:px-5"
+          className="animate-in fade-in-0 slide-in-from-top-1 border-t border-glass-edge/[0.07] bg-glass/[0.03] px-4 py-4 duration-200 sm:px-5"
         >
           {topic.summary && (
-            <p className="max-w-measure text-sm leading-relaxed text-ink-muted">{topic.summary}</p>
+            <p className="max-w-measure font-reading text-[0.9375rem] leading-relaxed text-ink-muted">
+              {topic.summary}
+            </p>
           )}
 
           {topic.outcomes.length > 0 && (
@@ -327,12 +356,35 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
               </p>
               <ul className="mt-1.5 space-y-1">
                 {topic.outcomes.map((outcome) => (
-                  <li key={outcome} className="flex max-w-measure gap-2 text-sm text-ink-muted">
+                  <li
+                    key={outcome}
+                    className="flex max-w-measure gap-2 font-reading text-[0.9375rem] leading-relaxed text-ink-muted"
+                  >
                     <span className="mt-[0.4375rem] h-1 w-1 shrink-0 rounded-full bg-accent" aria-hidden />
                     {outcome}
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/*
+            The material, playable in place.
+
+            `ResourcePanel` embeds YouTube inline, so a learner can watch the
+            lecture for a topic straight from the syllabus view without losing
+            their place in it.
+          */}
+          {resources.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-2xs font-medium uppercase tracking-wider text-ink-faint">
+                Material for this topic
+              </p>
+              <div className="space-y-2">
+                {resources.map((resource, i) => (
+                  <ResourcePanel key={resource.id} resource={resource} compact={i > 0} />
+                ))}
+              </div>
             </div>
           )}
 
@@ -343,7 +395,15 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
                 Drill this topic
               </Link>
             </Button>
-            <span className="tabular text-2xs text-ink-faint">difficulty {topic.difficulty}/5</span>
+            <Button asChild variant="ghost" size="sm">
+              {/* Pre-filters the Library to this topic, which is the other half
+                  of "I can search for it" — see `?q=` in library/page.tsx. */}
+              <Link href={`/plan/${planId}/library?q=${encodeURIComponent(topic.title)}`}>
+                <Library />
+                All resources
+              </Link>
+            </Button>
+            <span className="font-mono text-2xs text-ink-faint">difficulty {topic.difficulty}/5</span>
           </div>
         </div>
       )}
@@ -355,7 +415,7 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
  * Five pips: a glanceable mastery read that needs no legend.
  *
  * The count of filled pips carries the value, so the reading does not depend
- * on separating amber from emerald — the colour only adds the "past 70%"
+ * on separating violet from emerald — the colour only adds the "past 70%"
  * threshold on top of a signal that is already there.
  */
 function MasteryPip({ mastery }: { mastery: number }) {
@@ -369,7 +429,7 @@ function MasteryPip({ mastery }: { mastery: number }) {
             key={i}
             className={cn(
               'h-3 w-1 rounded-full transition-colors',
-              i < filled ? (mastery >= 70 ? 'bg-success' : 'bg-accent') : 'bg-surface-sunken',
+              i < filled ? (mastery >= 70 ? 'bg-success' : 'bg-accent-vivid') : 'bg-surface-sunken',
             )}
           />
         ))}

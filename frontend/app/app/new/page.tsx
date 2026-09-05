@@ -4,13 +4,17 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import {
+  checkCapacity,
+  type CapacityVerdict,
+} from '../../../../backend/planner/capacity';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeft, ArrowRight, Sparkles, CalendarDays, GraduationCap,
   Briefcase, Layers, Check, Target, Gauge, AlertTriangle,
 } from 'lucide-react';
 import {
-  Button, Card, Badge, Textarea, Input, FormField, Slider,
+  Button, Card, Badge, OrbitRings, Textarea, Input, FormField, Slider,
   Segmented, SegmentedMulti, Callout, EASE,
 } from '../../../components/ui';
 import { InsightStream } from '../../../components/insight-stream';
@@ -100,20 +104,30 @@ export default function NewPlanPage() {
     Math.round((new Date(targetDate).getTime() - new Date(startDate).getTime()) / (7 * 86_400_000)),
   );
 
-  const totalMinutes = React.useMemo(() => {
-    const rest = new Set(restDays);
-    let total = 0;
-    const days = Math.max(
-      0,
-      Math.round((new Date(targetDate).getTime() - new Date(startDate).getTime()) / 86_400_000),
-    );
-    for (let i = 0; i <= Math.min(days, 540); i++) {
-      const dow = new Date(new Date(startDate).getTime() + i * 86_400_000).getDay();
-      if (rest.has(dow)) continue;
-      total += dow === 0 || dow === 6 ? weekendMinutes : weekdayMinutes;
-    }
-    return total;
-  }, [startDate, targetDate, weekdayMinutes, weekendMinutes, restDays]);
+  /*
+    The capacity verdict, from the same module the API validates with.
+
+    Previously this screen counted the total itself and warned below a flat
+    900 minutes, while the route enforced an unrelated per-weekday floor — so
+    the wizard could happily submit a plan the server would reject, and reject
+    plans the server would have accepted. One implementation, two callers.
+  */
+  const capacity = React.useMemo(
+    () =>
+      checkCapacity({
+        startDate,
+        targetDate,
+        weekdayMinutes,
+        weekendMinutes,
+        restDays,
+        prepType: intake?.pt ?? 'skill',
+        level,
+        weeks,
+      }),
+    [startDate, targetDate, weekdayMinutes, weekendMinutes, restDays, intake?.pt, level, weeks],
+  );
+
+  const totalMinutes = capacity.totalMinutes;
 
   const hoursPerWeek = Math.round(((5 - restDays.filter((d) => d > 0 && d < 6).length) * weekdayMinutes +
     (2 - restDays.filter((d) => d === 0 || d === 6).length) * weekendMinutes) / 60);
@@ -185,7 +199,7 @@ export default function NewPlanPage() {
     step === 0 ? goal.trim().length >= 3
     : step === 1 ? (intake?.ask ?? []).every((q) => answers[q.id])
     : step === 2 ? datesValid
-    : weekdayMinutes > 0 || weekendMinutes > 0;
+    : capacity.ok;
 
   const busy = classifying || submitting;
 
@@ -209,15 +223,20 @@ export default function NewPlanPage() {
         or down the moment you press Continue — which reads as a layout bug
         rather than as a transition.
       */}
-      <div className="relative overflow-hidden">
+      <div className="perspective-1200 relative overflow-hidden">
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={step}
             custom={direction}
-            initial={{ opacity: 0, x: direction * 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -24 }}
-            transition={{ duration: 0.28, ease: EASE }}
+            // The step turns in from the side it came from, rather than sliding
+            // flat. Direction is preserved on the way back, so going *back* a
+            // step visibly reverses the motion — which is what tells a learner
+            // they undid something rather than advanced.
+            initial={{ opacity: 0, x: direction * 40, rotateY: direction * 10, z: -90 }}
+            animate={{ opacity: 1, x: 0, rotateY: 0, z: 0 }}
+            exit={{ opacity: 0, x: direction * -40, rotateY: direction * -10, z: -90 }}
+            transition={{ duration: 0.34, ease: EASE }}
+            className="transform-3d"
           >
             {step === 0 && (
               <Step
@@ -253,8 +272,8 @@ export default function NewPlanPage() {
                           'min-h-touch rounded-field border px-3 py-2 text-xs outline-none transition-colors',
                           'focus-visible:ring-2 focus-visible:ring-accent/60',
                           goal === example
-                            ? 'border-accent/50 bg-accent/12 text-accent'
-                            : 'border-line bg-surface-2 text-ink-muted hover:border-line-strong hover:text-ink',
+                            ? 'border-accent/50 bg-accent/12 text-accent shadow-glow'
+                            : 'glass text-ink-muted hover:border-accent/30 hover:text-ink',
                         )}
                       >
                         {example}
@@ -361,15 +380,22 @@ export default function NewPlanPage() {
                 title="How much time do you really have?"
                 sub="Be honest. The plan is only useful if it fits."
               >
+                {/*
+                  Either field may be zero. The hint says so, because a slider
+                  that bottoms out at "None" otherwise looks like a mistake
+                  rather than a supported answer.
+                */}
                 <MinutesField
                   id="weekday-minutes"
                   label="On a weekday"
+                  hint="Set this to zero if you only study at weekends."
                   value={weekdayMinutes}
                   onChange={setWeekdayMinutes}
                 />
                 <MinutesField
                   id="weekend-minutes"
                   label="On a weekend day"
+                  hint="Set this to zero if weekends are not yours."
                   value={weekendMinutes}
                   onChange={setWeekendMinutes}
                 />
@@ -392,6 +418,7 @@ export default function NewPlanPage() {
                 </FormField>
 
                 <BudgetSummary
+                  verdict={capacity}
                   totalMinutes={totalMinutes}
                   weeks={weeks}
                   restDayCount={restDays.length}
@@ -430,7 +457,7 @@ export default function NewPlanPage() {
       <div
         className={cn(
           'mt-8 flex items-center justify-between gap-3',
-          'sticky bottom-0 -mx-4 border-t border-line bg-bg/95 px-4 py-3 pb-safe backdrop-blur-xl',
+          'sticky bottom-0 -mx-4 border-t border-glass-edge/[0.08] bg-bg/80 px-4 py-3 pb-safe backdrop-blur-2xl',
           'sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none',
         )}
       >
@@ -470,7 +497,7 @@ export default function NewPlanPage() {
 /**
  * The step rail.
  *
- * A spine, like every other ordered thing in APEX — but horizontal, because
+ * An orbit rail, like every other ordered thing in Kairo — but horizontal, because
  * these four steps are a short linear run rather than a long schedule.
  *
  * Completed steps are clickable so a learner can go back and change an answer
@@ -502,10 +529,12 @@ function StepRail({ step, onJump }: { step: number; onJump: (next: number) => vo
                 >
                   <span
                     className={cn(
-                      'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-2xs font-semibold transition-colors',
-                      state === 'done' && 'bg-success/15 text-success',
-                      state === 'active' && 'bg-accent text-accent-fg',
-                      state === 'pending' && 'bg-surface-3 text-ink-faint',
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-2xs font-semibold transition-all duration-300',
+                      state === 'done' && 'bg-success/15 text-success ring-1 ring-inset ring-success/25',
+                      // Only the current step glows. On a four-step rail that is
+                      // the entire job of the graphic.
+                      state === 'active' && 'bg-accent text-accent-fg shadow-glow-lg',
+                      state === 'pending' && 'bg-glass/[0.07] text-ink-faint ring-1 ring-inset ring-glass-edge/[0.09]',
                     )}
                   >
                     {state === 'done' ? <Check className="h-3 w-3" strokeWidth={3} /> : index + 1}
@@ -528,9 +557,9 @@ function StepRail({ step, onJump }: { step: number; onJump: (next: number) => vo
               </li>
 
               {index < STEPS.length - 1 && (
-                <li aria-hidden className="h-px min-w-2 flex-1 overflow-hidden rounded-full bg-line">
+                <li aria-hidden className="h-0.5 min-w-2 flex-1 overflow-hidden rounded-full bg-line">
                   <motion.span
-                    className="block h-full bg-success/50"
+                    className="block h-full bg-gradient-to-r from-success/60 to-cyan-vivid/60"
                     initial={false}
                     animate={{ scaleX: index < step ? 1 : 0 }}
                     style={{ transformOrigin: 'left' }}
@@ -568,8 +597,8 @@ function Choice({
         'relative rounded-xl border px-4 py-3 text-left outline-none transition-all duration-150',
         'focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         selected
-          ? 'border-accent bg-accent/10 ring-1 ring-accent/20'
-          : 'border-line bg-surface-2 hover:border-line-strong',
+          ? 'border-accent bg-accent/10 shadow-glow ring-1 ring-accent/20'
+          : 'glass sheen hover:border-accent/25 hover:shadow-glow',
       )}
     >
       <span className="flex items-center justify-between gap-3">
@@ -589,8 +618,17 @@ function DetectedCard({ intake, onChange }: { intake: Intake; onChange: (pt: Int
   ];
 
   return (
-    <Card className="bg-surface-2 p-4">
-      <Badge tone="accent">
+    <Card className="relative overflow-hidden p-4">
+      {/* The one moment in onboarding where the app has clearly *understood*
+          something, so it is the one that gets an orbit behind it. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-16 aspect-square w-48 opacity-40"
+      >
+        <OrbitRings count={3} lit={1} />
+      </div>
+
+      <Badge tone="accent" className="relative">
         <Sparkles />
         Detected
       </Badge>
@@ -621,16 +659,28 @@ function DetectedCard({ intake, onChange }: { intake: Intake; onChange: (pt: Int
  * land a slider thumb on it.
  */
 function MinutesField({
-  id, label, value, onChange,
-}: { id: string; label: string; value: number; onChange: (v: number) => void }) {
+  id, label, hint, value, onChange,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
   const presets = [30, 60, 90, 120, 180, 240, 300, 360];
 
   return (
     <FormField
       label={label}
       htmlFor={id}
+      hint={hint}
       labelAction={
-        <span className="tabular text-sm font-semibold text-accent">
+        <span
+          className={cn(
+            'font-mono text-sm font-semibold',
+            value === 0 ? 'text-ink-faint' : 'text-accent',
+          )}
+        >
           {value === 0 ? 'None' : formatMinutes(value)}
         </span>
       }
@@ -663,8 +713,8 @@ function MinutesField({
               'min-h-touch shrink-0 rounded-field border px-2.5 text-2xs font-medium outline-none transition-colors',
               'focus-visible:ring-2 focus-visible:ring-accent/60',
               value === preset
-                ? 'border-accent/50 bg-accent/12 text-accent'
-                : 'border-line text-ink-faint hover:border-line-strong hover:text-ink',
+                ? 'border-accent/50 bg-accent/12 text-accent shadow-glow'
+                : 'border-glass-edge/[0.09] text-ink-faint hover:border-accent/25 hover:text-ink',
             )}
           >
             {formatMinutes(preset)}
@@ -683,15 +733,32 @@ function MinutesField({
  * to tell them the timeline never fitted.
  */
 function BudgetSummary({
-  totalMinutes, weeks, restDayCount,
-}: { totalMinutes: number; weeks: number; restDayCount: number }) {
+  verdict, totalMinutes, weeks, restDayCount,
+}: {
+  verdict: CapacityVerdict;
+  totalMinutes: number;
+  weeks: number;
+  restDayCount: number;
+}) {
   const hours = Math.round(totalMinutes / 60);
+  const minHours = Math.round(verdict.minimumMinutes / 60);
   const perWeek = Math.round(totalMinutes / Math.max(1, weeks));
-  const tight = totalMinutes < 900;
+
+  /*
+    How far along the bar the requirement sits.
+
+    Shown as a *marker on the learner's own budget* rather than as a second
+    number in a list: "you are here, the floor is there" is read instantly,
+    whereas two figures in a table have to be compared. Capped at 90% so the
+    marker never sits on top of the end cap when the budget is only just over.
+  */
+  const fill = Math.min(100, Math.round((totalMinutes / Math.max(1, verdict.minimumMinutes)) * 100));
+  const markerAt = Math.min(90, Math.round((verdict.minimumMinutes / Math.max(1, totalMinutes)) * 100));
 
   return (
-    <Card className="overflow-hidden bg-surface-2">
-      <div className="flex items-center gap-2 border-b border-line px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider text-ink-faint">
+    <Card className="relative overflow-hidden">
+      <div className="holo-rule absolute inset-x-0 top-0" />
+      <div className="flex items-center gap-2 border-b border-glass-edge/[0.07] px-4 py-2.5 text-2xs font-semibold uppercase tracking-wider text-ink-faint">
         <Gauge className="h-3.5 w-3.5" />
         Total study budget
       </div>
@@ -703,34 +770,83 @@ function BudgetSummary({
             initial={{ opacity: 0.5, y: -3 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, ease: EASE }}
-            className="tabular font-display text-3xl font-semibold tracking-tight"
+            className="font-mono text-fluid-stat font-semibold tracking-tight"
           >
             {hours}
             <span className="ml-1 text-base font-medium text-ink-muted">hours</span>
           </motion.p>
+
+          <span
+            className={cn(
+              'text-2xs font-semibold uppercase tracking-wider',
+              verdict.ok ? 'text-success' : 'text-warn',
+            )}
+          >
+            {verdict.ok ? 'Above the minimum' : 'Below the minimum'}
+          </span>
         </div>
 
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
+        {/*
+          The bar is scaled to the *minimum*, not to some arbitrary maximum, so
+          it answers the only question that matters here: is there enough?
+        */}
+        <div className="mt-3">
+          <div className="well relative h-2 overflow-hidden rounded-full">
+            <div
+              className={cn(
+                'h-full rounded-full transition-[width] duration-500 ease-out',
+                verdict.ok
+                  ? 'bg-gradient-to-r from-accent-vivid to-cyan-vivid'
+                  : 'bg-warn',
+              )}
+              style={{ width: `${fill}%` }}
+            />
+            {verdict.ok && totalMinutes > verdict.minimumMinutes && (
+              <span
+                aria-hidden
+                className="absolute inset-y-0 w-px bg-ink/40"
+                style={{ left: `${markerAt}%` }}
+              />
+            )}
+          </div>
+          <p className="mt-2 font-mono text-2xs text-ink-faint">
+            bare minimum for this goal · {minHours}h
+          </p>
+        </div>
+
+        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3">
           <div>
             <dt className="text-ink-faint">Over</dt>
-            <dd className="tabular mt-0.5 font-medium">{weeks} weeks</dd>
+            <dd className="mt-0.5 font-mono font-medium">{weeks} weeks</dd>
           </div>
           <div>
             <dt className="text-ink-faint">Per week</dt>
-            <dd className="tabular mt-0.5 font-medium">{formatMinutes(perWeek)}</dd>
+            <dd className="mt-0.5 font-mono font-medium">{formatMinutes(perWeek)}</dd>
           </div>
           <div>
             <dt className="text-ink-faint">Rest days</dt>
-            <dd className="tabular mt-0.5 font-medium">
+            <dd className="mt-0.5 font-mono font-medium">
               {restDayCount === 0 ? 'None' : `${restDayCount}/week`}
             </dd>
           </div>
         </dl>
 
-        {tight && (
+        {/*
+          The verdict's own sentence, verbatim. It comes from the same module
+          the API rejects with, so the learner cannot be told one thing here and
+          a different thing on submit.
+        */}
+        {!verdict.ok && (
           <Callout tone="warn" icon={<AlertTriangle />} className="mt-4">
-            That is a tight budget. APEX will prioritise the highest-value material and mark the rest
-            optional rather than pretend it all fits.
+            {verdict.message}
+          </Callout>
+        )}
+
+        {verdict.ok && totalMinutes < verdict.minimumMinutes * 1.25 && (
+          <Callout tone="info" icon={<Target />} className="mt-4">
+            This clears the minimum, but only just. Kairo will prioritise the
+            highest-value material and mark the rest optional rather than pretend
+            it all fits.
           </Callout>
         )}
       </div>

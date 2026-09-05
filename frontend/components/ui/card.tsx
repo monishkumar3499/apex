@@ -22,7 +22,13 @@ export function Card({
         raised ? 'surface-raised' : 'surface',
         'rounded-card',
         interactive &&
-          'transition-[border-color,box-shadow,transform] duration-200 ease-out hover:border-accent/30 hover:shadow-e2 pointer:hover:-translate-y-0.5',
+          cn(
+            // `sheen` adds the travelling specular highlight, which is what
+            // makes the lift read as a physical panel catching the light
+            // rather than as a card that merely moved.
+            'sheen transition-[border-color,box-shadow,transform] duration-300 ease-out',
+            'hover:border-accent/30 hover:shadow-glow pointer:hover:-translate-y-0.5',
+          ),
         className,
       )}
       {...props}

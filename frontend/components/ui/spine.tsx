@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * The spine — APEX's signature graphic.
+ * The orbit rail — Kairo's signature graphic.
  *
  * The product's whole claim is that it turns a goal into an *ordered route
  * through time*. The spine is that claim drawn: a continuous vertical rail
@@ -62,7 +62,7 @@ type NodeState = 'done' | 'active' | 'pending' | 'error';
  *
  * State is carried by fill *and* shape, never by colour alone: done is a
  * filled disc, active is a ringed disc, pending is a small hollow dot. Someone
- * who cannot separate amber from emerald still reads the sequence correctly.
+ * who cannot separate violet from emerald still reads the sequence correctly.
  */
 export function SpineNode({
   state = 'pending',
@@ -93,9 +93,9 @@ export function SpineNode({
           the brightest element on the screen should not be the dullest colour
           in the palette.
         */
-        state === 'active' && 'bg-accent-vivid text-white shadow-e2 ring-4 ring-accent/15',
+        state === 'active' && 'bg-accent-vivid text-white shadow-glow-lg ring-4 ring-accent/15',
         state === 'error' && 'bg-danger/12 text-danger ring-1 ring-inset ring-danger/40',
-        state === 'pending' && 'bg-surface-2 text-ink-faint ring-1 ring-inset ring-line-strong',
+        state === 'pending' && 'bg-glass/[0.07] text-ink-faint ring-1 ring-inset ring-glass-edge/[0.14]',
         className,
       )}
     >

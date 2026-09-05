@@ -26,13 +26,13 @@ export const Slider = React.forwardRef<
     )}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-surface-sunken">
+    <SliderPrimitive.Track className="well relative h-2 w-full grow overflow-hidden rounded-full">
       <SliderPrimitive.Range className="absolute h-full rounded-full bg-accent" />
     </SliderPrimitive.Track>
     <SliderPrimitive.Thumb
       className={cn(
         // The visible cap is 20px; the padded box around it is the real target.
-        'block h-5 w-5 rounded-full border-2 border-accent bg-surface shadow-e2',
+        'block h-5 w-5 rounded-full border-2 border-accent bg-bg shadow-glow',
         'transition-[box-shadow,transform] duration-150 ease-out',
         'hover:scale-110 active:scale-105',
         'outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg',

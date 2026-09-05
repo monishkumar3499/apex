@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentUser } from '../../../../lib/supabase/server';
 import { admin } from '../../../../../backend/db/supabase';
-import { PlanMap, type MapUnit } from '../../../../components/plan-map';
+import { PlanMap, type MapUnit, type MapTopic } from '../../../../components/plan-map';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,17 +44,27 @@ export default async function MapPage({ params }: Props) {
     stats.set(key, entry);
   }
 
-  const { count: resourceCounts } = { count: null };
+  /*
+    The resources themselves, not just how many there are.
+
+    The map used to fetch `topic_id` alone and render a count, so a learner
+    browsing their syllabus could see that a topic had three resources and had
+    no way to reach any of them without going to the Library and searching for
+    the topic by name. The join costs one query for the whole plan.
+  */
   const { data: links } = await db
     .from('topic_resources')
-    .select('topic_id')
-    .eq('plan_id', id);
+    .select('topic_id, rank, resources ( id, kind, title, url, author, thumbnail_url, duration_sec, why )')
+    .eq('plan_id', id)
+    .order('rank', { ascending: true });
 
-  const resourcesPerTopic = new Map<string, number>();
-  for (const link of (links ?? []) as Array<{ topic_id: string }>) {
-    resourcesPerTopic.set(link.topic_id, (resourcesPerTopic.get(link.topic_id) ?? 0) + 1);
+  const resourcesPerTopic = new Map<string, MapTopic['resources']>();
+  for (const link of (links ?? []) as any[]) {
+    if (!link.resources) continue;
+    const list = resourcesPerTopic.get(link.topic_id) ?? [];
+    list.push(link.resources);
+    resourcesPerTopic.set(link.topic_id, list);
   }
-  void resourceCounts;
 
   const mapUnits: MapUnit[] = (units ?? []).map((unit: any) => {
     const unitTopics = (topics ?? [])
@@ -74,7 +84,7 @@ export default async function MapPage({ params }: Props) {
           total: s?.total ?? 0,
           firstDay: s?.firstDay ?? null,
           firstDate: s?.firstDate ?? null,
-          resourceCount: resourcesPerTopic.get(t.id) ?? 0,
+          resources: resourcesPerTopic.get(t.id) ?? [],
           scheduled: Boolean(s),
         };
       });

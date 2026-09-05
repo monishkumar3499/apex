@@ -4,9 +4,9 @@ import * as React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { motion } from 'motion/react';
-import { ArrowUp, Square, Compass, Sparkles } from 'lucide-react';
+import { ArrowUp, Square, Sparkles, Play, ExternalLink } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { EASE } from './ui';
+import { EASE, KairoMark } from './ui';
 
 export interface ChatMessage {
   id: string;
@@ -121,27 +121,32 @@ export function CoachChat({
 
   /*
     dvh, not vh: on mobile Safari 100vh includes the address bar, so the
-    composer started life below the fold. The subtraction also has to clear the
-    mobile tab bar, which vh knows nothing about.
+    composer started life below the fold.
 
-    `h-sm` handles a phone in landscape, where the header and composer alone
-    eat most of a 400px-tall viewport and the transcript ends up about two
+    The subtraction now comes from `--workspace-chrome` (see globals.css)
+    rather than from three hand-tuned per-breakpoint numbers. Those numbers
+    over-reserved by about 3.5rem on a phone, which is why the composer floated
+    in the middle of a band of empty space instead of sitting at the bottom of
+    the screen the way a chat is expected to.
+
+    `h-sm` still handles a phone in landscape, where the header and composer
+    alone eat most of a 400px-tall viewport and the transcript would end up two
     lines high — there, the page scrolls instead of the transcript.
   */
   return (
-    <div className="flex h-[calc(100dvh-13rem)] flex-col h-sm:h-[calc(100dvh-9rem)] sm:h-[calc(100dvh-14rem)] md:h-[calc(100dvh-6rem)]">
+    <div className="flex h-[calc(100dvh-var(--workspace-chrome))] flex-col h-sm:h-[calc(100dvh-8rem)]">
       <div className="no-chain flex-1 overflow-y-auto pb-4">
         {empty ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent/12 text-accent">
-              <Compass className="h-5 w-5" />
+            <span className="glass grid h-12 w-12 place-items-center rounded-xl text-accent-vivid shadow-glow">
+              <KairoMark className="h-6 w-6" gradient id="coach" />
             </span>
             <h2 className="mt-4 font-display text-base font-semibold tracking-tight">
               Your coach knows this plan
             </h2>
-            <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-ink-muted">
-              It can see your schedule, what you have finished, and where you are weakest. Ask it
-              anything about the material or your pace.
+            <p className="mt-1.5 max-w-sm font-reading text-[0.9375rem] leading-relaxed text-ink-muted">
+              It can see your schedule, what you have finished, and where you are weakest — and it
+              will link the material already in your library. Ask it anything.
             </p>
           </div>
         ) : (
@@ -173,8 +178,19 @@ export function CoachChat({
         )}
       </div>
 
-      {/* ------------------------------------------------------ composer */}
-      <div className="shrink-0 pt-3">
+      {/*
+        ------------------------------------------------------ composer
+
+        Pinned to the bottom by the flex column above it — the transcript takes
+        `flex-1`, so this sits on the floor whether there are two messages or
+        two hundred. What made it *look* unpinned was the column's own height:
+        it reserved ~3.5rem more chrome on a phone than actually exists, so the
+        whole thing floated. That is now `--workspace-chrome`.
+
+        The gradient fades the last line of the transcript out behind the
+        composer instead of letting text end abruptly against it.
+      */}
+      <div className="shrink-0 bg-gradient-to-t from-bg via-bg/95 to-transparent pt-3">
         {visible.length <= 1 && !streaming && (
           <div className="scroll-x mb-3 -mx-1 flex gap-1.5 px-1 pb-1 sm:flex-wrap sm:overflow-visible">
             {suggestions.map((suggestion) => (
@@ -183,7 +199,7 @@ export function CoachChat({
                 onClick={() => send(suggestion)}
                 className={cn(
                   'inline-flex min-h-touch shrink-0 items-center gap-1.5 whitespace-nowrap rounded-field',
-                  'border border-line bg-surface-2 px-3 py-2 text-xs text-ink-muted',
+                  'glass px-3 py-2 text-xs text-ink-muted',
                   'outline-none transition-colors hover:border-accent/40 hover:text-ink',
                   'focus-visible:ring-2 focus-visible:ring-accent/60 sm:whitespace-normal',
                 )}
@@ -223,7 +239,7 @@ export function CoachChat({
             <button
               onClick={stop}
               aria-label="Stop generating"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-3 text-ink-muted outline-none transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="glass flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-ink-muted outline-none transition-colors hover:text-accent focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               <Square className="h-3.5 w-3.5" fill="currentColor" />
             </button>
@@ -244,8 +260,9 @@ export function CoachChat({
           )}
         </div>
 
-        <p className="mt-2 text-center text-2xs text-ink-faint">
-          The coach has your whole plan in context. It can be wrong — verify anything that matters.
+        <p className="pb-1 pt-2 text-center text-2xs text-ink-faint">
+          Your whole plan is in context, and every link comes from your own library. The coach can
+          still be wrong — verify anything that matters.
         </p>
       </div>
     </div>
@@ -256,9 +273,9 @@ function Avatar() {
   return (
     <div
       aria-hidden
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent/12 text-accent"
+      className="glass flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-accent-vivid"
     >
-      <Compass className="h-4 w-4" />
+      <KairoMark className="h-4 w-4" />
     </div>
   );
 }
@@ -271,16 +288,41 @@ function Avatar() {
  * live on a wrapper, so the wrapper is added here — otherwise a four-column
  * comparison table from the coach makes the whole phone page pan sideways.
  */
+/** YouTube links get a play glyph; everything else an out-arrow. */
+const isVideoUrl = (href = '') => /youtube\.com|youtu\.be/i.test(href);
+
 const MARKDOWN_COMPONENTS = {
   table: ({ children, ...props }: React.ComponentPropsWithoutRef<'table'>) => (
     <div className="scroll-x my-3 -mx-1 px-1">
       <table {...props}>{children}</table>
     </div>
   ),
-  // The coach is not the app; its links open away from it.
-  a: ({ children, ...props }: React.ComponentPropsWithoutRef<'a'>) => (
-    <a {...props} target="_blank" rel="noopener noreferrer">
-      {children}
+  /*
+    The coach is not the app; its links open away from it.
+
+    They are also rendered as chips rather than as underlined text, because
+    nearly every one is now a citation into the learner's own library — a thing
+    to click and watch, not a word in a sentence. The leading glyph says which
+    kind before the label is read.
+  */
+  a: ({ children, href, ...props }: React.ComponentPropsWithoutRef<'a'>) => (
+    <a
+      {...props}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        'inline-flex max-w-full items-baseline gap-1 rounded no-underline',
+        'text-accent transition-colors hover:text-accent-hover hover:underline hover:underline-offset-2',
+        'outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+      )}
+    >
+      {isVideoUrl(href) ? (
+        <Play className="h-3 w-3 shrink-0 translate-y-px" fill="currentColor" aria-hidden />
+      ) : (
+        <ExternalLink className="h-3 w-3 shrink-0 translate-y-px" aria-hidden />
+      )}
+      <span className="min-w-0 break-words">{children}</span>
     </a>
   ),
 };
@@ -302,7 +344,7 @@ function Bubble({
         transition={{ duration: 0.25, ease: EASE }}
         className="flex justify-end"
       >
-        <div className="max-w-[85%] rounded-2xl rounded-br-md border border-accent/20 bg-accent/12 px-4 py-2.5 text-sm leading-relaxed">
+        <div className="max-w-[85%] rounded-2xl rounded-br-md border border-accent/20 bg-accent/12 px-4 py-2.5 font-sans text-sm leading-relaxed">
           {content}
         </div>
       </motion.div>
@@ -314,7 +356,17 @@ function Bubble({
       <Avatar />
       <div
         className={cn(
-          'min-w-0 flex-1 text-sm leading-relaxed',
+          'min-w-0 flex-1 leading-relaxed',
+          /*
+            The reading serif, at a slightly larger size than the UI.
+
+            Coach answers are the longest continuous prose in the app — often
+            300 words of explanation — and a UI sans at 14px is tuned for labels
+            and buttons, not for paragraphs somebody is trying to learn from.
+            Everything structural inside it (code, tables, headings) stays on
+            the UI stack below.
+          */
+          'font-reading text-[0.9375rem] sm:text-base',
           // Capped at a reading measure. On a wide monitor the coach's prose
           // otherwise runs the full width of the workspace column.
           'max-w-measure',
@@ -323,7 +375,10 @@ function Bubble({
           '[&_li]:my-1',
           '[&_h1]:mb-2 [&_h1]:mt-4 [&_h1]:font-display [&_h1]:text-base [&_h1]:font-semibold',
           '[&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:font-display [&_h2]:text-base [&_h2]:font-semibold',
-          '[&_h3]:mb-1.5 [&_h3]:mt-3.5 [&_h3]:font-semibold',
+          '[&_h3]:mb-1.5 [&_h3]:mt-3.5 [&_h3]:font-display [&_h3]:font-semibold',
+          // Structure reverts to the UI stack: a serif table header or inline
+          // code label reads as a typo rather than as a deliberate choice.
+          '[&_table]:font-sans [&_code]:font-mono',
           '[&_strong]:font-semibold [&_strong]:text-ink',
           '[&_code]:rounded [&_code]:bg-surface-3 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.85em] [&_code]:break-words',
           '[&_pre]:my-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:border [&_pre]:border-line [&_pre]:bg-surface-sunken [&_pre]:p-3.5',
@@ -331,7 +386,7 @@ function Bubble({
           '[&_blockquote]:border-l-2 [&_blockquote]:border-accent/40 [&_blockquote]:pl-3 [&_blockquote]:text-ink-muted',
           '[&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2',
           '[&_table]:my-3 [&_table]:w-full [&_table]:text-xs',
-          '[&_th]:border [&_th]:border-line [&_th]:bg-surface-2 [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left',
+          '[&_th]:border [&_th]:border-line [&_th]:bg-glass/[0.06] [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left',
           '[&_td]:border [&_td]:border-line [&_td]:px-2 [&_td]:py-1.5',
         )}
       >

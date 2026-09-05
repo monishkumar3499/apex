@@ -78,39 +78,39 @@ describe('resolveOrigin', () => {
   it('prefers APP_ORIGIN, because a forwarded header is client-supplied', () => {
     const origin = resolveOrigin(
       req('http://localhost:3000/auth/callback', { 'x-forwarded-host': 'evil.example' }),
-      { APP_ORIGIN: 'https://apex.example' },
+      { APP_ORIGIN: 'https://kairo.example' },
     );
-    expect(origin).toBe('https://apex.example');
+    expect(origin).toBe('https://kairo.example');
   });
 
   it('trusts the proxy headers when APP_ORIGIN is unset', () => {
     const origin = resolveOrigin(
       req('http://127.0.0.1:3000/auth/callback', {
-        'x-forwarded-host': 'apex.example',
+        'x-forwarded-host': 'kairo.example',
         'x-forwarded-proto': 'https',
       }),
       {},
     );
-    expect(origin).toBe('https://apex.example');
+    expect(origin).toBe('https://kairo.example');
   });
 
   it('takes the first entry of a forwarded chain', () => {
     const origin = resolveOrigin(
       req('http://127.0.0.1:3000/auth/callback', {
-        'x-forwarded-host': 'apex.example, internal-lb',
+        'x-forwarded-host': 'kairo.example, internal-lb',
         'x-forwarded-proto': 'https, http',
       }),
       {},
     );
-    expect(origin).toBe('https://apex.example');
+    expect(origin).toBe('https://kairo.example');
   });
 
   it('assumes https for a non-local host with no proto header', () => {
     const origin = resolveOrigin(
-      req('http://10.0.0.4:3000/auth/callback', { 'x-forwarded-host': 'apex.example' }),
+      req('http://10.0.0.4:3000/auth/callback', { 'x-forwarded-host': 'kairo.example' }),
       {},
     );
-    expect(origin).toBe('https://apex.example');
+    expect(origin).toBe('https://kairo.example');
   });
 
   it('stays on http for local development', () => {
@@ -131,8 +131,8 @@ describe('resolveOrigin', () => {
   });
 
   it('strips quotes an .env file leaves behind', () => {
-    const origin = resolveOrigin(req('http://localhost:3000/x'), { APP_ORIGIN: '"https://apex.example"' });
-    expect(origin).toBe('https://apex.example');
+    const origin = resolveOrigin(req('http://localhost:3000/x'), { APP_ORIGIN: '"https://kairo.example"' });
+    expect(origin).toBe('https://kairo.example');
   });
 });
 

@@ -1,5 +1,5 @@
 -- ============================================================================
--- APEX · AI Prep Engine — PostgreSQL / Supabase schema
+-- Kairo · AI Prep Engine — PostgreSQL / Supabase schema
 -- ============================================================================
 -- Run this whole file once in the Supabase SQL editor. It is idempotent.
 --
@@ -58,7 +58,7 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name',
              new.raw_user_meta_data->>'name',
-             split_part(coalesce(new.email,'learner@apex'), '@', 1)),
+             split_part(coalesce(new.email,'learner@kairo'), '@', 1)),
     new.raw_user_meta_data->>'avatar_url'
   )
   on conflict (id) do nothing;

@@ -44,7 +44,23 @@ function playlistId(url: string): string | null {
  * else opens in a new tab with its provenance shown, because knowing *why*
  * this resource was chosen is what makes a curated list trustworthy.
  */
-export function ResourcePanel({ resource, className }: { resource: Resource; className?: string }) {
+export function ResourcePanel({
+  resource,
+  className,
+  compact = false,
+}: {
+  resource: Resource;
+  className?: string;
+  /**
+   * A tighter row for secondary material.
+   *
+   * Used where a topic's *other* resources are listed under its primary one:
+   * at full size, three of them dwarf the resource the day is actually built
+   * around and the panel stops reading as a hierarchy. Same affordances, less
+   * chrome — the thumbnail shrinks and the "why" line is dropped.
+   */
+  compact?: boolean;
+}) {
   const [playing, setPlaying] = React.useState(false);
   const [theatre, setTheatre] = React.useState(false);
 
@@ -59,7 +75,7 @@ export function ResourcePanel({ resource, className }: { resource: Resource; cla
 
   return (
     <>
-      <div className={cn('overflow-hidden rounded-xl border border-line bg-surface-2', className)}>
+      <div className={cn('glass overflow-hidden rounded-xl', className)}>
         {playing && embeddable ? (
           <div className="relative aspect-video bg-black">
             <iframe
@@ -87,11 +103,14 @@ export function ResourcePanel({ resource, className }: { resource: Resource; cla
             </div>
           </div>
         ) : (
-          <div className="flex gap-3 p-3">
+          <div className={cn('flex gap-3', compact ? 'p-2' : 'p-3')}>
             {/* thumbnail / icon */}
             <button
               onClick={() => (embeddable ? setPlaying(true) : window.open(resource.url, '_blank', 'noopener'))}
-              className="group relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-surface-3 outline-none focus-visible:ring-2 focus-visible:ring-accent/60 xs:w-28"
+              className={cn(
+                'well group relative shrink-0 overflow-hidden rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+                compact ? 'h-12 w-20' : 'h-16 w-24 xs:w-28',
+              )}
               aria-label={embeddable ? `Play ${resource.title}` : `Open ${resource.title}`}
             >
               {resource.thumbnail_url ? (
@@ -105,15 +124,23 @@ export function ResourcePanel({ resource, className }: { resource: Resource; cla
                   />
                   {embeddable && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/45">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-black shadow-e2 transition-transform duration-200 group-hover:scale-110">
-                        <Play className="ml-0.5 h-3.5 w-3.5" fill="currentColor" />
+                      <span
+                        className={cn(
+                          'flex items-center justify-center rounded-full bg-white/95 text-black shadow-e2 transition-transform duration-200 group-hover:scale-110',
+                          compact ? 'h-6 w-6' : 'h-8 w-8',
+                        )}
+                      >
+                        <Play
+                          className={cn('ml-0.5', compact ? 'h-3 w-3' : 'h-3.5 w-3.5')}
+                          fill="currentColor"
+                        />
                       </span>
                     </span>
                   )}
                 </>
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-ink-faint">
-                  <Icon className="h-5 w-5" />
+                  <Icon className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
                 </span>
               )}
             </button>
@@ -131,7 +158,14 @@ export function ResourcePanel({ resource, className }: { resource: Resource; cla
                 ) : null}
               </div>
 
-              <p className="mt-1 line-clamp-2 text-sm font-medium leading-snug">{resource.title}</p>
+              <p
+                className={cn(
+                  'mt-1 font-medium leading-snug',
+                  compact ? 'line-clamp-1 text-xs' : 'line-clamp-2 text-sm',
+                )}
+              >
+                {resource.title}
+              </p>
 
               <div className="mt-0.5 flex items-center gap-2 text-2xs text-ink-faint">
                 {resource.author && <span className="truncate">{resource.author}</span>}
@@ -154,7 +188,7 @@ export function ResourcePanel({ resource, className }: { resource: Resource; cla
                 </a>
               </div>
 
-              {resource.why && (
+              {resource.why && !compact && (
                 <p className="mt-1.5 line-clamp-1 text-2xs italic text-ink-faint">{resource.why}</p>
               )}
             </div>

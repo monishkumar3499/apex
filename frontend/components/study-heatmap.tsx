@@ -78,7 +78,7 @@ export function StudyHeatmap({
         <div className="mt-4 max-h-72 overflow-y-auto rounded-lg border border-line">
           <table className="w-full text-xs">
             <caption className="sr-only">Minutes studied per day, most recent first</caption>
-            <thead className="sticky top-0 bg-surface-2">
+            <thead className="sticky top-0 bg-bg">
               <tr>
                 <th scope="col" className="border-b border-line px-3 py-2 text-left font-medium">Date</th>
                 <th scope="col" className="border-b border-line px-3 py-2 text-right font-medium">Studied</th>

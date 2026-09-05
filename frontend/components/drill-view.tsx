@@ -239,23 +239,39 @@ export function DrillView({
         />
 
         {/*
-          Keyed on the card id so each question mounts fresh and slides in.
-          Without the key the text swaps in place, and on a fast run it is easy
-          to start reading the next stem thinking it is still the last one.
+          Keyed on the card id so each question mounts fresh. Without the key
+          the text swaps in place, and on a fast run it is easy to start
+          reading the next stem thinking it is still the last one.
+
+          The transition is a card deck rather than a horizontal slide: the
+          graded card turns away into depth and the next one rises from behind
+          it. That is what a spaced-repetition queue actually is — a stack you
+          are working through — and the depth cue says "that one is behind you"
+          in a way a sideways slide does not.
+
+          `perspective` lives on the wrapper, not on the animating element: a
+          per-element perspective is recalculated from that element's own
+          centre, so each card would appear to be viewed from a different
+          camera and the rotation would read as a wobble.
         */}
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={card.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.22, ease: EASE }}
-          >
+        <div className="perspective-1200">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={card.id}
+              initial={{ opacity: 0, rotateY: 14, z: -120, y: 16 }}
+              animate={{ opacity: 1, rotateY: 0, z: 0, y: 0 }}
+              exit={{ opacity: 0, rotateY: -12, z: -100, y: -12 }}
+              transition={{ duration: 0.36, ease: EASE }}
+              className="transform-3d"
+            >
             <Card raised className="rounded-panel p-5 sm:p-7">
               <div className="flex flex-wrap items-center gap-2">
                 {card.isReview ? <Badge tone="info">Review</Badge> : <Badge tone="accent">New</Badge>}
                 <span className="text-2xs uppercase tracking-wider text-ink-faint">
-                  {KIND_LABEL[card.kind]} · difficulty {card.difficulty}/5
+                  {KIND_LABEL[card.kind]} · difficulty{' '}
+                  <span className="font-mono">
+                    {card.difficulty}/5
+                  </span>
                 </span>
               </div>
 
@@ -275,10 +291,13 @@ export function DrillView({
                         className={cn(
                           'flex min-h-touch w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left text-sm',
                           'outline-none transition-all focus-visible:ring-2 focus-visible:ring-accent/60 sm:px-4',
-                          !revealed && 'border-line bg-surface-2 hover:border-accent/40',
-                          revealed && correct && 'border-success bg-success/10',
+                          // Unanswered options are glass and liftable; once
+                          // graded they stop being controls, so they lose the
+                          // hover affordance and the wrong ones recede.
+                          !revealed && 'glass sheen hover:border-accent/40 hover:shadow-glow',
+                          revealed && correct && 'border-success bg-success/10 shadow-[0_0_0_1px_rgb(var(--success)/0.3)]',
                           revealed && chosen && !correct && 'border-danger bg-danger/10',
-                          revealed && !correct && !chosen && 'border-line opacity-50',
+                          revealed && !correct && !chosen && 'border-line opacity-40',
                         )}
                       >
                         <span
@@ -317,14 +336,14 @@ export function DrillView({
                   className="mt-6"
                 >
                   {card.kind !== 'mcq' && (
-                    <div className="rounded-xl border border-success/25 bg-success/[0.07] p-4">
+                    <div className="rounded-xl border border-success/25 bg-success/[0.09] p-4 shadow-[0_0_24px_-10px_rgb(var(--success)/0.5)]">
                       <p className="text-2xs font-medium uppercase tracking-wider text-success">Answer</p>
                       <p className="mt-1.5 text-sm leading-relaxed">{card.answer}</p>
                     </div>
                   )}
 
                   {card.explanation && (
-                    <div className="mt-3 rounded-xl border border-line bg-surface-2 p-4">
+                    <div className="glass mt-3 rounded-xl p-4">
                       <p className="text-2xs font-medium uppercase tracking-wider text-ink-faint">Why</p>
                       <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{card.explanation}</p>
                     </div>
@@ -344,8 +363,9 @@ export function DrillView({
                           key={g.value}
                           onClick={() => grade(g.value)}
                           className={cn(
-                            'min-h-touch rounded-xl border bg-surface-2 px-2 py-3 text-center',
-                            'outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent/60',
+                            'min-h-touch rounded-xl border px-2 py-3 text-center backdrop-blur-sm',
+                            'outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-accent/60',
+                            'pointer:hover:-translate-y-0.5',
                             g.className,
                           )}
                         >
@@ -361,8 +381,9 @@ export function DrillView({
                 </motion.div>
               )}
             </Card>
-          </motion.div>
-        </AnimatePresence>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     );
   }

@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modelFor, chainFor, providerFor, TokenLedger, runJson } from './model-router';
-import { breaker, ProviderGate, gateFor } from './resilience';
+import { modelFor, chainFor, providerFor, usableChain, TokenLedger, runJson } from './model-router';
+import { breaker, ProviderGate, gateFor, TokenBucket, FairQueue } from './resilience';
 import { ProviderError, parseRetryAfter, backoffMs, RETRYABLE_STATUS } from './provider-error';
+import { PROVIDERS, PROVIDER_IDS, resolveModel, keysFor, isConfigured } from './providers';
+import { keyring, resetKeyrings } from './keyring';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -36,21 +38,39 @@ describe('tier & provider resolution', () => {
   });
 
   it('resolves the documented primary model for each tier', () => {
-    expect(modelFor('nano')).toBe('minimax/minimax-m3:free');
+    // The volume tiers lead on Groq because its free budget is ~13,000
+    // requests/day against OpenRouter's 50; structured stays on Gemini because
+    // nothing else here matches it for JSON fidelity.
+    expect(modelFor('nano')).toBe('groq:llama-3.1-8b-instant');
     expect(modelFor('structured')).toBe('gemini-2.5-flash');
-    expect(modelFor('chat')).toBe('minimax/minimax-m3:free');
+    expect(modelFor('chat')).toBe('groq:llama-3.3-70b-versatile');
   });
 
-  it('gives every tier a multi-model fallback chain', () => {
+  it('gives every tier a deep fallback chain', () => {
     for (const tier of ['nano', 'structured', 'chat'] as const) {
-      expect(chainFor(tier).length).toBeGreaterThanOrEqual(2);
+      expect(chainFor(tier).length).toBeGreaterThanOrEqual(6);
     }
   });
 
-  it('crosses providers within every chain, so one vendor outage is survivable', () => {
+  it('spreads every chain across at least four vendors, because free quota is per-vendor', () => {
     for (const tier of ['nano', 'structured', 'chat'] as const) {
       const providers = new Set(chainFor(tier).map((m) => providerFor(m, tier)));
-      expect(providers.size).toBeGreaterThan(1);
+      expect(providers.size).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('never leads a chain with OpenRouter, whose free slugs cap at 50 requests/day', () => {
+    for (const tier of ['nano', 'structured', 'chat'] as const) {
+      expect(providerFor(chainFor(tier)[0], tier)).not.toBe('openrouter');
+    }
+  });
+
+  it('puts a distinct vendor in each of a chain\'s first three slots', () => {
+    // The first three are the ones a burst actually reaches. Two Groq slugs in
+    // a row would mean a Groq outage costs two attempts instead of one.
+    for (const tier of ['nano', 'structured', 'chat'] as const) {
+      const head = chainFor(tier).slice(0, 3).map((m) => providerFor(m, tier));
+      expect(new Set(head).size).toBe(head.length);
     }
   });
 
@@ -88,6 +108,339 @@ describe('tier & provider resolution', () => {
     expect(providerFor('minimax/minimax-m3:free', 'nano')).toBe('openrouter');
     expect(providerFor('minimax/minimax-m3:free', 'chat')).toBe('openrouter');
     expect(providerFor('z-ai/glm-5.2:free', 'chat')).toBe('openrouter');
+  });
+
+  it('routes an explicit provider prefix, and strips it before the call', () => {
+    // Half these vendors serve the same Llama weights, so the prefix is the
+    // only way to say which copy a chain entry means — and Groq has never
+    // heard of a model called "groq:llama-3.3-70b-versatile".
+    expect(resolveModel('groq:llama-3.3-70b-versatile')).toEqual({
+      provider: 'groq',
+      model: 'llama-3.3-70b-versatile',
+    });
+    expect(resolveModel('cerebras:llama-3.3-70b')).toEqual({
+      provider: 'cerebras',
+      model: 'llama-3.3-70b',
+    });
+  });
+
+  it('keeps a vendor-prefixed model intact when the provider prefix is also present', () => {
+    expect(resolveModel('groq:openai/gpt-oss-120b')).toEqual({
+      provider: 'groq',
+      model: 'openai/gpt-oss-120b',
+    });
+  });
+
+  it('does not mistake a :free suffix for a provider prefix', () => {
+    // `minimax/minimax-m3:free` contains a colon but no provider prefix; a
+    // naive split on the first colon would route it to a provider called
+    // "minimax/minimax-m3".
+    expect(resolveModel('minimax/minimax-m3:free').provider).toBe('openrouter');
+    expect(resolveModel('minimax/minimax-m3:free').model).toBe('minimax/minimax-m3:free');
+  });
+
+  it('resolves a bare registry slug without a prefix', () => {
+    expect(resolveModel('llama-3.1-8b-instant').provider).toBe('groq');
+    expect(resolveModel('mistral-small-latest').provider).toBe('mistral');
+  });
+});
+
+describe('provider registry', () => {
+  it('declares a key env var, endpoint and free-tier limit for every provider', () => {
+    for (const id of PROVIDER_IDS) {
+      const spec = PROVIDERS[id];
+      expect(spec.keyEnv).toMatch(/^[A-Z0-9_]+$/);
+      expect(spec.rpm).toBeGreaterThan(0);
+      expect(spec.concurrency).toBeGreaterThan(0);
+      expect(spec.signup).toMatch(/^https:\/\//);
+    }
+  });
+
+  it('holds at least six independent vendors, which is the whole anti-rate-limit strategy', () => {
+    expect(PROVIDER_IDS.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('gives every provider a distinct key env var', () => {
+    const envs = PROVIDER_IDS.map((id) => PROVIDERS[id].keyEnv);
+    expect(new Set(envs).size).toBe(envs.length);
+  });
+
+  it('splits a comma-separated key list into independent identities', () => {
+    const saved = process.env.GROQ_API_KEY;
+    try {
+      process.env.GROQ_API_KEY = 'gsk_one, gsk_two ,"gsk_three"';
+      expect(keysFor('groq')).toEqual(['gsk_one', 'gsk_two', 'gsk_three']);
+      expect(isConfigured('groq')).toBe(true);
+    } finally {
+      if (saved === undefined) delete process.env.GROQ_API_KEY;
+      else process.env.GROQ_API_KEY = saved;
+    }
+  });
+
+  it('de-duplicates a repeated key, which would otherwise double-count the quota', () => {
+    const saved = process.env.GROQ_API_KEY;
+    try {
+      process.env.GROQ_API_KEY = 'gsk_same,gsk_same';
+      expect(keysFor('groq')).toEqual(['gsk_same']);
+    } finally {
+      if (saved === undefined) delete process.env.GROQ_API_KEY;
+      else process.env.GROQ_API_KEY = saved;
+    }
+  });
+
+  it('treats Cloudflare as unconfigured without its account id', () => {
+    const savedToken = process.env.CLOUDFLARE_API_TOKEN;
+    const savedAccount = process.env.CLOUDFLARE_ACCOUNT_ID;
+    try {
+      process.env.CLOUDFLARE_API_TOKEN = 'cf_token';
+      delete process.env.CLOUDFLARE_ACCOUNT_ID;
+      expect(isConfigured('cloudflare')).toBe(false);
+      process.env.CLOUDFLARE_ACCOUNT_ID = 'acct';
+      expect(isConfigured('cloudflare')).toBe(true);
+    } finally {
+      if (savedToken === undefined) delete process.env.CLOUDFLARE_API_TOKEN;
+      else process.env.CLOUDFLARE_API_TOKEN = savedToken;
+      if (savedAccount === undefined) delete process.env.CLOUDFLARE_ACCOUNT_ID;
+      else process.env.CLOUDFLARE_ACCOUNT_ID = savedAccount;
+    }
+  });
+});
+
+describe('usableChain', () => {
+  const ALL_KEYS = PROVIDER_IDS.map((id) => PROVIDERS[id].keyEnv);
+  let saved: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    saved = Object.fromEntries(ALL_KEYS.map((k) => [k, process.env[k]]));
+    ALL_KEYS.forEach((k) => delete process.env[k]);
+    resetKeyrings();
+  });
+
+  afterEach(() => {
+    ALL_KEYS.forEach((k) => {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k]!;
+    });
+    resetKeyrings();
+  });
+
+  it('drops models whose provider has no key, rather than turning them into failed attempts', () => {
+    process.env.GROQ_API_KEY = 'gsk_test';
+    for (const tier of ['nano', 'structured', 'chat'] as const) {
+      const chain = usableChain(tier);
+      expect(chain.length).toBeGreaterThan(0);
+      for (const ref of chain) expect(providerFor(ref, tier)).toBe('groq');
+    }
+  });
+
+  it('keeps every model when every provider is configured', () => {
+    ALL_KEYS.forEach((k) => (process.env[k] = 'test-key'));
+    process.env.CLOUDFLARE_ACCOUNT_ID = 'acct';
+    for (const tier of ['nano', 'structured', 'chat'] as const) {
+      expect(usableChain(tier)).toEqual(chainFor(tier));
+    }
+    delete process.env.CLOUDFLARE_ACCOUNT_ID;
+  });
+
+  it('fails with an actionable message when nothing is configured at all', () => {
+    // The old behaviour was to attempt every model and report ten auth
+    // failures, which said nothing about the actual problem.
+    expect(() => usableChain('structured')).toThrow(/No AI provider is configured/);
+    expect(() => usableChain('structured')).toThrow(/GEMINI_API_KEY/);
+  });
+});
+
+describe('TokenBucket', () => {
+  it('allows an immediate burst on a cold start', () => {
+    // A cold process must not be artificially slow: the first requests are the
+    // ones a learner is watching a spinner for.
+    const bucket = new TokenBucket('test', 30);
+    expect(bucket.waitMs()).toBe(0);
+    bucket.take();
+    expect(bucket.waitMs()).toBe(0);
+  });
+
+  it('makes callers wait once the burst allowance is spent', () => {
+    const bucket = new TokenBucket('test', 6);
+    for (let i = 0; i < 10; i++) bucket.take();
+    expect(bucket.waitMs()).toBeGreaterThan(0);
+  });
+
+  it('halves its own rate when a 429 proves the published limit wrong', () => {
+    const bucket = new TokenBucket('test', 60);
+    expect(bucket.stats.rpm).toBe(60);
+    bucket.penalise();
+    expect(bucket.stats.rpm).toBe(30);
+    bucket.penalise();
+    expect(bucket.stats.rpm).toBe(15);
+  });
+
+  it('honours an upstream Retry-After exactly, rather than guessing shorter', () => {
+    const bucket = new TokenBucket('test', 60);
+    bucket.penalise(5_000);
+    const wait = bucket.waitMs();
+    expect(wait).toBeGreaterThan(4_000);
+    expect(wait).toBeLessThanOrEqual(5_000);
+  });
+
+  it('blocks for a long time once the daily allowance is gone', () => {
+    // A per-minute backoff never clears a daily cap, so the bucket has to be
+    // able to say "not today" rather than "in twenty seconds".
+    const bucket = new TokenBucket('test', 60, 3);
+    for (let i = 0; i < 3; i++) bucket.take();
+    expect(bucket.waitMs()).toBeGreaterThan(60_000);
+  });
+
+  it('counts daily spend so a per-minute bucket cannot burn a day in an hour', () => {
+    const bucket = new TokenBucket('test', 60, 100);
+    bucket.take();
+    bucket.take();
+    expect(bucket.stats.spentToday).toBe(2);
+    expect(bucket.stats.dailyLimit).toBe(100);
+  });
+
+  it('resets cleanly for the next test', () => {
+    const bucket = new TokenBucket('test', 60);
+    bucket.penalise(30_000);
+    bucket.reset();
+    expect(bucket.waitMs()).toBe(0);
+    expect(bucket.stats.rpm).toBe(60);
+  });
+});
+
+describe('FairQueue', () => {
+  it('round-robins between owners instead of serving one owner\'s backlog first', async () => {
+    // The scenario: one learner's six-month build submits hundreds of calls
+    // while nineteen others each want one drill card. Under FIFO those
+    // nineteen wait for the build.
+    const queue = new FairQueue();
+    const served: string[] = [];
+
+    const waits = [
+      queue.wait('builder').then(() => served.push('builder')),
+      queue.wait('builder').then(() => served.push('builder')),
+      queue.wait('builder').then(() => served.push('builder')),
+      queue.wait('learner-b').then(() => served.push('learner-b')),
+      queue.wait('learner-c').then(() => served.push('learner-c')),
+    ];
+
+    while (queue.next()) {
+      /* drain */
+    }
+    await Promise.all(waits);
+
+    // Both single-request learners are served within the first three slots,
+    // not behind all three of the builder's requests.
+    expect(served.slice(0, 3)).toContain('learner-b');
+    expect(served.slice(0, 3)).toContain('learner-c');
+    expect(served).toHaveLength(5);
+  });
+
+  it('preserves FIFO order within a single owner', async () => {
+    const queue = new FairQueue();
+    const served: number[] = [];
+    const waits = [
+      queue.wait('solo').then(() => served.push(1)),
+      queue.wait('solo').then(() => served.push(2)),
+      queue.wait('solo').then(() => served.push(3)),
+    ];
+
+    while (queue.next()) {
+      /* drain */
+    }
+    await Promise.all(waits);
+    expect(served).toEqual([1, 2, 3]);
+  });
+
+  it('reports how many distinct owners are waiting', async () => {
+    const queue = new FairQueue();
+    const waits = [queue.wait('a'), queue.wait('b'), queue.wait('a')];
+    expect(queue.owners).toBe(2);
+    expect(queue.pending).toBe(3);
+    while (queue.next()) {
+      /* drain */
+    }
+    await Promise.all(waits);
+    expect(queue.pending).toBe(0);
+  });
+
+  it('returns false when there is nothing left to serve', () => {
+    expect(new FairQueue().next()).toBe(false);
+  });
+});
+
+describe('keyring', () => {
+  beforeEach(() => resetKeyrings());
+  afterEach(() => {
+    delete process.env.GROQ_API_KEY;
+    resetKeyrings();
+  });
+
+  it('reports no keys for an unconfigured provider', () => {
+    delete process.env.GROQ_API_KEY;
+    expect(keyring('groq').size).toBe(0);
+    expect(keyring('groq').waitMs()).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it('turns three keys into three independently metered identities', () => {
+    process.env.GROQ_API_KEY = 'k1,k2,k3';
+    expect(keyring('groq').size).toBe(3);
+    expect(keyring('groq').snapshot()).toHaveLength(3);
+  });
+
+  it('spreads requests across keys rather than draining the first one', async () => {
+    process.env.GROQ_API_KEY = 'k1,k2,k3';
+    const ring = keyring('groq');
+    const used = new Set<number>();
+    for (let i = 0; i < 3; i++) {
+      const claim = await ring.acquire(0);
+      expect(claim).not.toBeNull();
+      used.add(claim!.index);
+    }
+    expect(used.size).toBe(3);
+  });
+
+  it('penalises only the key that was rate limited', async () => {
+    process.env.GROQ_API_KEY = 'k1,k2';
+    const ring = keyring('groq');
+    ring.penalise(0, 30_000);
+
+    const snapshot = ring.snapshot();
+    expect(snapshot[0].waitMs).toBeGreaterThan(1_000);
+    // The second key was not implicated by the first key's exhaustion —
+    // treating it as if it were is how a multi-key setup ends up no faster
+    // than a single-key one.
+    expect(snapshot[1].waitMs).toBe(0);
+    expect(ring.waitMs()).toBe(0);
+  });
+
+  it('refuses a claim rather than waiting longer than the caller allows', async () => {
+    process.env.GROQ_API_KEY = 'only';
+    const ring = keyring('groq');
+    ring.penalise(0, 60_000);
+    // Null is the signal that tells the router to try a different vendor
+    // instead of sitting in this one's queue.
+    expect(await ring.acquire(500)).toBeNull();
+  });
+
+  it('does not lose a surviving key\'s learned rate when another key is added', () => {
+    process.env.GROQ_API_KEY = 'k1';
+    const ring = keyring('groq');
+    ring.penalise(0);
+    const learned = ring.snapshot()[0].rpm;
+
+    process.env.GROQ_API_KEY = 'k1,k2';
+    expect(ring.size).toBe(2);
+    // Throwing away what we know about k1's live ceiling would re-trigger the
+    // exact 429s the bucket had just learned to avoid.
+    expect(ring.snapshot()[0].rpm).toBe(learned);
+  });
+
+  it('never puts a raw key in a snapshot', () => {
+    process.env.GROQ_API_KEY = 'gsk_supersecret_value';
+    const snapshot = keyring('groq').snapshot();
+    expect(JSON.stringify(snapshot)).not.toContain('supersecret');
+    expect(snapshot[0].fingerprint).toBe('alue');
   });
 });
 
@@ -289,6 +642,32 @@ describe('ProviderGate', () => {
   it('exposes a shared gate per provider, so all call sites throttle together', () => {
     expect(gateFor('gemini')).toBe(gateFor('gemini'));
     expect(gateFor('gemini')).not.toBe(gateFor('openrouter'));
+    expect(gateFor('groq')).not.toBe(gateFor('cerebras'));
+  });
+
+  it('gives every registry provider a gate', () => {
+    for (const id of PROVIDER_IDS) expect(gateFor(id)).toBeDefined();
+  });
+
+  it('does not let one owner\'s backlog block another owner', async () => {
+    const gate = new ProviderGate('test', { concurrency: 1, minIntervalMs: 0 });
+    const order: string[] = [];
+
+    // Occupy the single slot, then queue three from one owner and one from
+    // another. The lone learner must not wait behind the whole build.
+    const hold = gate.run(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    }, 'builder');
+
+    const queued = [
+      gate.run(async () => void order.push('builder'), 'builder'),
+      gate.run(async () => void order.push('builder'), 'builder'),
+      gate.run(async () => void order.push('builder'), 'builder'),
+      gate.run(async () => void order.push('learner'), 'learner'),
+    ];
+
+    await Promise.all([hold, ...queued]);
+    expect(order.indexOf('learner')).toBeLessThan(3);
   });
 });
 

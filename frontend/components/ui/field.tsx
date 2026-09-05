@@ -13,7 +13,7 @@ import { cn } from '../../lib/utils';
 */
 
 const CONTROL = cn(
-  'w-full rounded-xl border border-line bg-surface-2 text-ink',
+  'w-full rounded-xl border border-glass-edge/[0.1] bg-glass/[0.04] text-ink backdrop-blur-sm',
   'outline-none transition-[border-color,box-shadow] duration-150',
   'placeholder:text-ink-faint',
   'focus:border-accent/60 focus:ring-2 focus:ring-accent/20',

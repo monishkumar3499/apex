@@ -34,7 +34,7 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-2xs font-semibold uppercase tracking-widest text-accent">{eyebrow}</p>
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-[0.18em] text-accent">{eyebrow}</p>
         )}
         <h1 className="font-display text-fluid-h3 font-semibold tracking-tight text-ink">{title}</h1>
         {description && (
@@ -42,6 +42,16 @@ export function PageHeader({
           // subtitle runs to 160 characters and stops being readable.
           <p className="mt-1.5 max-w-measure text-sm leading-relaxed text-ink-muted">{description}</p>
         )}
+        {/*
+          A short iridescent underline closing the heading block. It is the one
+          piece of chrome shared by all six workspace surfaces, so it is what
+          makes them read as one product rather than as six pages.
+
+          Below the description rather than between it and the title: a rule in
+          the middle reads as a divider and visually orphans the subtitle from
+          the heading it belongs to.
+        */}
+        <div aria-hidden className="holo-rule mt-4 w-16" />
       </div>
 
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

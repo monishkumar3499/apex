@@ -40,6 +40,10 @@ export interface CalendarOptions {
  * from collapsing the first time real life intervenes:
  *   1. a catch-up day every two weeks that schedules no new material, and
  *   2. a reserved final-revision block that is never consumed by new topics.
+ *
+ * A day whose configured capacity is zero is not a study day at all. That is
+ * what lets a learner set weekdays *or* weekends to zero — see
+ * `capacity.ts` for the rule that decides whether what remains is enough.
  */
 export function buildCalendar(options: CalendarOptions): CalendarDay[] {
   const {
@@ -63,10 +67,23 @@ export function buildCalendar(options: CalendarOptions): CalendarDay[] {
     if (rest.has(dow)) continue;
 
     const isWeekend = dow === 0 || dow === 6;
+    const configured = isWeekend ? weekendMinutes : weekdayMinutes;
+
+    /*
+      Zero means "not a study day", exactly like a rest day.
+
+      This used to read `Math.max(15, configured)`, which silently turned "I do
+      not study on weekdays" into "I study 15 minutes every weekday" — so a
+      weekend-only learner got a plan built almost entirely out of days they had
+      told us they were unavailable. The floor still applies to days that *do*
+      have time, because a 1-14 minute session cannot hold anything.
+    */
+    if (configured <= 0) continue;
+
     days.push({
       dayIndex: days.length + 1,
       date,
-      capacity: Math.max(15, isWeekend ? weekendMinutes : weekdayMinutes),
+      capacity: Math.max(15, configured),
       isWeekend,
       isCatchUp: false,
       isFinalStretch: false,

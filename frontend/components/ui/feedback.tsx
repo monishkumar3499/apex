@@ -3,6 +3,7 @@
 import * as React from 'react';
 import * as SeparatorPrimitive from '@radix-ui/react-separator';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
+import { OrbitRings } from './void';
 import { cn } from '../../lib/utils';
 
 /* --------------------------------------------------------------- Skeleton */
@@ -21,7 +22,7 @@ export function SkeletonList({ rows = 3, className }: { rows?: number; className
   return (
     <div className={cn('space-y-3', className)} role="status" aria-label="Loading">
       {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="surface rounded-card p-4">
+        <div key={i} className="glass rounded-card p-4">
           <div className="flex items-center gap-3">
             <Skeleton className="h-6 w-6 shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -54,21 +55,34 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center rounded-panel border border-dashed border-line',
-        'bg-surface-2/40 px-6 py-12 text-center sm:py-16',
+        'relative flex flex-col items-center justify-center overflow-hidden rounded-panel',
+        'border border-dashed border-line bg-glass/[0.03] px-6 py-14 text-center sm:py-20',
         className,
       )}
     >
+      {/*
+        An empty state is the one place with room for the orbit motif at full
+        size, and the one place it does real work: it says "there is a system
+        here, it just has nothing in it yet" rather than "this screen is
+        broken".
+      */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[min(420px,120%)] -translate-x-1/2 -translate-y-1/2 opacity-50"
+      >
+        <OrbitRings count={4} lit={1} />
+      </div>
+
       {icon && (
-        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-surface-3 text-ink-faint [&_svg]:size-5">
+        <div className="glass relative mb-5 grid h-12 w-12 place-items-center rounded-xl text-accent-vivid shadow-glow [&_svg]:size-5">
           {icon}
         </div>
       )}
-      <h3 className="font-display text-base font-semibold tracking-tight">{title}</h3>
+      <h3 className="relative font-display text-base font-semibold tracking-tight">{title}</h3>
       {description && (
-        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-ink-muted">{description}</p>
+        <p className="relative mt-2 max-w-sm text-sm leading-relaxed text-ink-muted">{description}</p>
       )}
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="relative mt-6">{action}</div>}
     </div>
   );
 }
@@ -176,7 +190,7 @@ export function Avatar({
     <AvatarPrimitive.Root
       className={cn(
         'relative flex h-9 w-9 shrink-0 select-none items-center justify-center overflow-hidden rounded-full',
-        'bg-surface-3 text-2xs font-semibold text-ink-muted',
+        'bg-glass/[0.08] text-2xs font-semibold text-ink-muted ring-1 ring-inset ring-glass-edge/[0.1]',
         className,
       )}
     >

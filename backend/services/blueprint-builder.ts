@@ -62,13 +62,23 @@ export async function generateBlueprint(params: {
   req: BlueprintRequest;
   ledger?: TokenLedger;
   onProgress?: BlueprintProgress;
+  /**
+   * Whose build this is.
+   *
+   * A sharded blueprint is the single burstiest thing this app does — an
+   * outline plus three concurrent topic calls, each of which may retry across
+   * several providers. Tagging them with the learner lets the provider gate
+   * round-robin between people instead of serving one build to completion
+   * while everyone else waits.
+   */
+  owner?: string;
 }): Promise<{ blueprint: BlueprintResult; sharded: boolean; degradedUnits: string[] }> {
-  const { req, ledger, onProgress } = params;
+  const { req, ledger, onProgress, owner } = params;
 
   // A small plan is one fast call already; sharding it would add a round trip
   // to save nothing.
   if (req.unitTarget < MIN_UNITS_PER_SHARD * 2) {
-    return { blueprint: await singleCall(req, ledger), sharded: false, degradedUnits: [] };
+    return { blueprint: await singleCall(req, ledger, owner), sharded: false, degradedUnits: [] };
   }
 
   let outline: Outline;
@@ -83,6 +93,7 @@ export async function generateBlueprint(params: {
       reasoning: { effort: 'low' },
       schemaHint: OUTLINE_SCHEMA_HINT,
       ledger,
+      owner,
       messages: [
         { role: 'system', content: OUTLINE_SYSTEM },
         { role: 'user', content: outlineUser(req) },
@@ -90,7 +101,7 @@ export async function generateBlueprint(params: {
     });
   } catch (error) {
     logger.warn({ error }, 'blueprint.outline.failed, falling back to a single call');
-    return { blueprint: await singleCall(req, ledger), sharded: false, degradedUnits: [] };
+    return { blueprint: await singleCall(req, ledger, owner), sharded: false, degradedUnits: [] };
   }
 
   const units = (outline.u ?? [])
@@ -104,7 +115,7 @@ export async function generateBlueprint(params: {
 
   if (units.length < MIN_UNITS_PER_SHARD * 2) {
     logger.warn({ units: units.length }, 'blueprint.outline.too-small, falling back to a single call');
-    return { blueprint: await singleCall(req, ledger), sharded: false, degradedUnits: [] };
+    return { blueprint: await singleCall(req, ledger, owner), sharded: false, degradedUnits: [] };
   }
 
   await onProgress?.(`Mapped ${units.length} units — writing topics in parallel`, {
@@ -140,6 +151,7 @@ export async function generateBlueprint(params: {
         reasoning: { effort: 'low' },
         schemaHint: TOPICS_SCHEMA_HINT,
         ledger,
+        owner,
         messages: [
           { role: 'system', content: TOPICS_SYSTEM },
           {
@@ -168,7 +180,7 @@ export async function generateBlueprint(params: {
       { units: merged.length, topicCount, target: req.topicTarget },
       'blueprint.shards.insufficient, falling back to a single call',
     );
-    return { blueprint: await singleCall(req, ledger), sharded: false, degradedUnits: [] };
+    return { blueprint: await singleCall(req, ledger, owner), sharded: false, degradedUnits: [] };
   }
 
   if (degradedUnits.length) {
@@ -184,7 +196,11 @@ export async function generateBlueprint(params: {
 }
 
 /** The original single-response path, kept as the fallback. */
-async function singleCall(req: BlueprintRequest, ledger?: TokenLedger): Promise<BlueprintResult> {
+async function singleCall(
+  req: BlueprintRequest,
+  ledger?: TokenLedger,
+  owner?: string,
+): Promise<BlueprintResult> {
   const generated = await runJson<BlueprintResult>({
     tier: 'structured',
     label: 'blueprint',
@@ -196,6 +212,7 @@ async function singleCall(req: BlueprintRequest, ledger?: TokenLedger): Promise<
     reasoning: { effort: 'low' },
     schemaHint: BLUEPRINT_SCHEMA_HINT,
     ledger,
+    owner,
     messages: [
       { role: 'system', content: BLUEPRINT_SYSTEM },
       { role: 'user', content: blueprintUser(req) },

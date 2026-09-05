@@ -1,4 +1,4 @@
-name: Deploy APEX to AWS EC2
+name: Deploy Kairo to AWS EC2
 
 on:
   workflow_dispatch:
@@ -79,7 +79,15 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd ~/apex
+            # Accept either directory name: the host was provisioned as
+            # ~/apex before the rename to Kairo, and a deploy must not depend on
+            # someone having renamed it by hand first.
+            REPO_DIR="$(ls -d ~/kairo ~/apex 2>/dev/null | head -1)"
+            if [ -z "$REPO_DIR" ]; then
+              echo "Neither ~/kairo nor ~/apex exists on the host."
+              exit 1
+            fi
+            cd "$REPO_DIR"
 
             git fetch origin ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
@@ -111,19 +119,25 @@ jobs:
               --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \
               --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
               --build-arg NEXT_PUBLIC_DEMO_MODE=false \
-              -t apex-app:new .
+              -t kairo-app:new .
 
             # Only retire the running container once the new image exists, so a
             # failed build leaves the previous version serving.
-            docker stop apex || true
-            docker rm apex || true
-            docker tag apex-app:new apex-app:latest
+            #
+            # Both names are stopped: the pre-rename container is called `apex`
+            # and still holds port 3000, so retiring only `kairo` would leave it
+            # running and the new container would fail to bind.
+            for name in kairo apex; do
+              docker stop "$name" || true
+              docker rm "$name" || true
+            done
+            docker tag kairo-app:new kairo-app:latest
 
-            docker run -d --name apex \
+            docker run -d --name kairo \
               -p 3000:3000 \
               --restart always \
               --env-file frontend/.env \
-              apex-app:latest
+              kairo-app:latest
 
             # Wait for the health endpoint before calling the deploy good.
             for attempt in $(seq 1 30); do
@@ -137,7 +151,7 @@ jobs:
                 echo "Health check response was:"
                 cat /tmp/health.json || true
                 echo "Recent container logs:"
-                docker logs --tail 60 apex || true
+                docker logs --tail 60 kairo || true
                 exit 1
               fi
               sleep 2

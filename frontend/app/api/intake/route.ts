@@ -17,10 +17,13 @@ const schema = z.object({
  * is actually preparing for rather than asking everyone the same five things.
  */
 export const POST = route('intake', async (request) => {
-  await requireUser();
+  const user = await requireUser();
   const body = await parseBody(request, schema);
 
   const intake = await classifyGoal({
+    // Queues this call under the learner, so the provider gate can serve
+    // twenty people fairly rather than first-come-first-served.
+    owner: user.id,
     goal: body.goal,
     level: body.level ?? 'beginner',
     weeks: body.weeks ?? 12,

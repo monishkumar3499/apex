@@ -1,7 +1,9 @@
-# APEX — an AI prep engine
+# Kairo — an AI prep engine
 
-Tell APEX what you are preparing for and by when. It works out whether that is an
-exam or a role, finds the best material that actually exists, and builds a
+*καιρός — the opportune moment.*
+
+Tell Kairo what you are preparing for and by when. It works out whether that is
+an exam or a role, finds the best material that actually exists, and builds a
 day-by-day study map that fits the hours you really have — then coaches you
 through it, drills you on it, and re-cuts it when you fall behind.
 
@@ -13,7 +15,7 @@ through it, drills you on it, and re-cuts it when you fall behind.
 
 A language model asked to "generate six months of daily study tasks with
 resources" produces a shallow list, arithmetic that does not add up, and URLs
-that do not exist — for a large token bill. So APEX uses the model for the two
+that do not exist — for a large token bill. So Kairo uses the model for the two
 things it is uniquely good at, and computes everything else.
 
 | Stage | Who does it | Why |
@@ -62,6 +64,56 @@ These are properties of the algorithm, enforced by tests in
 | `/plan/[id]/drill` | Recall practice, scheduled by SM-2 spaced repetition |
 | `/plan/[id]/coach` | A streaming coach that has the whole plan in context |
 | `/plan/[id]/progress` | Streaks, mastery, and an honest read on finishing in time |
+
+---
+
+## The look — Aurora Glass
+
+Kairo is a daily-use app opened at 6am and at midnight, so the design is
+dark-first and built in three layers that always paint back to front:
+
+| Layer | What it is | Rule |
+|---|---|---|
+| **0 · the void** | near-black indigo with a slow aurora drifting through it | never interactive, never in focus |
+| **1 · the glass** | frosted panels holding everything you read | the only layer with a hard edge |
+| **2 · the light** | accent bloom, specular sweeps, the orbit rail | one element per screen, whatever is live |
+
+The rule that keeps it from becoming decoration: **depth encodes state.**
+Something nearer the viewer is more urgent, a panel that lifts is one you are
+meant to act on, and blur means "behind, later, not now" — never merely
+"pretty". On Today that means the open task is raised and lit while a finished
+one recedes, so you can find your place on the screen without reading a word of
+it.
+
+**The orbit** is the signature graphic, and it is the name drawn: a topic is
+placed once, then returns at 2, 7 and 21 days, which is an orbit rather than a
+queue. It appears three ways, in descending cost — a canvas field
+(`components/ui/orbit-field.tsx`) on the landing hero and the build screen, CSS
+rings (`OrbitRings`) wherever the motif should be present rather than the
+subject, and the vertical rail (`Spine`) on every ordered list.
+
+Three implementation decisions worth knowing before changing any of it:
+
+- **The 3D is CSS transforms, not WebGL.** A real scene would render this with
+  proper bloom and depth of field, and cost ~150KB gzipped plus a shader
+  compile before the first frame. What a learner wants in that first second is
+  today's tasks, not a library booting. The one canvas is 2D with a
+  pre-rendered glow sprite, it stops when scrolled off-screen or the tab is
+  hidden, and it draws a single static frame under `prefers-reduced-motion`.
+- **Tokens are semantic, never literal** — `accent`, not `violet`. That is what
+  let the entire app be re-themed by rewriting one file: all ~40 components were
+  already asking for "the accent". Violet carries *state*, cyan carries
+  *quantity* (progress, counts, throughput), and magenta is at most one
+  highlight per screen and never load-bearing.
+- **`backdrop-filter` is the one thing that can drop frames** on a budget
+  phone. `.glass` therefore carries a real opaque fallback — some older Android
+  WebViews do not support it at all, and without the fallback those users get
+  unreadable text over the aurora.
+
+Light mode is a full peer, not an afterthought: same structure, cool porcelain
+ground, glass frosting *down* into white instead of up out of black. `accent` is
+pinned to clear AA as text in both modes, with a brighter `accent-vivid` for
+fills and glyphs above 24px, which are held to 3:1 rather than 4.5:1.
 
 ---
 
@@ -117,13 +169,15 @@ npm run dev          # http://localhost:3000
 ### Checks
 
 ```bash
-npm test             # 109 unit tests: scheduler, SM-2, model routing,
-                     # auth redirect rules, blueprint sharding, prompts
+npm test             # 145 unit tests: scheduler, SM-2, model routing,
+                     # provider registry, key rotation, token buckets, the
+                     # fairness queue, auth redirect rules, blueprint
+                     # sharding, prompts
 npm run typecheck
 npm run build
 
-# Opt-in: hits the real Gemini / OpenRouter / YouTube / Tavily endpoints and
-# prints measured latency, coverage and the token ledger for a full build.
+# Opt-in: hits the real model / YouTube / Tavily endpoints and prints measured
+# latency, coverage and the token ledger for a full build.
 RUN_INTEGRATION=1 npm test
 ```
 
@@ -136,9 +190,9 @@ RUN_INTEGRATION=1 npm test
 docker build \
   --build-arg NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co" \
   --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key" \
-  -t apex-app .
+  -t kairo-app .
 
-docker run -d --name apex -p 3000:3000 --env-file frontend/.env apex-app
+docker run -d --name kairo -p 3000:3000 --env-file frontend/.env kairo-app
 ```
 
 The GitHub Actions workflow does this automatically, reading the two values from
@@ -150,10 +204,10 @@ repository secrets (falling back to `frontend/.env` on the host), and waits for
 ## Layout
 
 ```text
-APEX/
+Kairo/
 ├── backend/                     # Plain TypeScript, imported by the Next server
-│   ├── ai/                      # Gemini + OpenRouter clients, fallback chains,
-│   │                            #   rate gate, circuit breaker, JSON repair
+│   ├── ai/                      # 8-provider registry, key rotation, adaptive
+│   │                            #   token buckets, fair queue, breaker, chains
 │   ├── curation/                # Resource scoring, dedupe, topic matching
 │   ├── planner/                 # Calendar, scheduler, SM-2 — the core IP
 │   ├── prompts/                 # The prompts, kept small on purpose
@@ -190,14 +244,41 @@ two lists in sync.
   rounded study-hour bucket, and `BLUEPRINT_VERSION`. Bump that constant
   whenever the prompt changes, or returning learners keep getting the structure
   the *previous* prompt produced.
-- **Every model tier has a cross-provider fallback chain.** Set
-  `STRUCTURED_MODEL` to a comma-separated list to reorder it; a single value is
-  promoted to the head of the built-in chain rather than replacing it, so
-  overriding the primary model never silently discards its fallbacks. Verify any
-  slug with `GET /api/health?models=1` — providers retire them without notice.
-- **The free Gemini tier is about 10 requests/minute,** and one build spends four
-  on the blueprint (an outline plus three concurrent shards). `ProviderGate` paces
-  requests and `ModelBreaker` sidelines a 429'd model rather than retrying it, so
-  concurrent builds degrade to a fallback model instead of failing.
+- **Rate limits are a capacity problem, not a retry problem.** Free quota is
+  metered *per API key, per vendor*, so no amount of polite backoff makes an
+  exhausted bucket bigger. The defence is breadth: eight vendors are supported
+  (Groq, Cerebras, Gemini, Mistral, GitHub Models, Cloudflare, Together,
+  OpenRouter) and every chain spans at least four of them. All are optional; a
+  missing key removes its models from every chain rather than turning them into
+  failed attempts.
+- **Two free multipliers, and the second one is the cheaper.** Adding a provider
+  adds a bucket — but *every* provider's env var also accepts a
+  **comma-separated list of keys**, and each entry is metered independently by
+  the upstream. `GROQ_API_KEY="a,b"` is genuinely twice the allowance.
+  `GET /api/health` reports `ai.buckets`; for 10–20 daily learners aim for four
+  or more, and the health check reports "degraded" below three.
+- **Why OpenRouter is last in every chain now.** A `:free` slug allows 20
+  requests/minute but only **50 per day** on an account under 10 lifetime
+  credits. One learner building one six-month plan can spend that alone. Groq
+  and Cerebras allow roughly 13,000/day each, for free, so the volume tiers lead
+  on those — which also took the coach's first token from 3–13s to under a
+  second.
+- **The buckets learn the real limit.** `TokenBucket` starts at each vendor's
+  published RPM, halves its rate on every 429, and creeps back up after 45s of
+  calm. Free tiers routinely enforce something tighter than they document, and
+  the observed limit is the only one that matters.
+- **A saturated provider is not a broken model.** The router distinguishes them:
+  a model failure opens that model's breaker, a vendor with no headroom opens
+  nothing and the work simply moves. Penalising a healthy slug because Google
+  was busy would remove it from the chain for the next learner too.
+- **One learner cannot starve the others.** `FairQueue` round-robins between
+  learners, so a six-month build's several hundred calls do not park nineteen
+  people's single drill request behind them.
+- **Verify any slug before trusting it.** `GET /api/health?models=1` probes each
+  tier's primary; `?models=all` probes every model in every chain. Providers
+  retire slugs without notice (`openai/gpt-oss-120b:free` now 404s). When
+  reordering a chain by hand, do not put two models from the same vendor in the
+  first three slots — those are the slots a burst reaches, so a repeat makes one
+  outage cost two attempts.
 - **Demo mode hides auth bugs.** With `NEXT_PUBLIC_DEMO_MODE=true` the OAuth path
   is never exercised, so sign-in can be completely broken and look fine.

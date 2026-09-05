@@ -19,13 +19,19 @@ const badgeVariants = cva(
     variants: {
       tone: {
         accent: 'border-accent/25 bg-accent/12 text-accent',
+        /**
+         * The second accent, for quantity rather than state — a count, a
+         * duration, a throughput. Keeping those on cyan is what stops violet
+         * from meaning four different things at once.
+         */
+        cyan: 'border-cyan/25 bg-cyan/12 text-cyan',
         info: 'border-info/25 bg-info/12 text-info',
         success: 'border-success/25 bg-success/12 text-success',
         warn: 'border-warn/25 bg-warn/12 text-warn',
         danger: 'border-danger/25 bg-danger/12 text-danger',
-        muted: 'border-line bg-surface-2 text-ink-muted',
+        muted: 'border-glass-edge/[0.09] bg-glass/[0.06] text-ink-muted',
         /** Filled. For the single most important status on a screen. */
-        solid: 'border-transparent bg-accent text-accent-fg',
+        solid: 'border-transparent bg-accent text-accent-fg shadow-glow',
       },
     },
     defaultVariants: { tone: 'muted' },
@@ -34,7 +40,9 @@ const badgeVariants = cva(
 
 type Tone = NonNullable<NonNullable<VariantProps<typeof badgeVariants>>['tone']>;
 
-const TONES = new Set<string>(['accent', 'info', 'success', 'warn', 'danger', 'muted', 'solid']);
+const TONES = new Set<string>([
+  'accent', 'cyan', 'info', 'success', 'warn', 'danger', 'muted', 'solid',
+]);
 
 export interface BadgeProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'color'> {
   /**

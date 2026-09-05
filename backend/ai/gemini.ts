@@ -1,5 +1,5 @@
 import { logger } from '../logger/pino';
-import type { Message, CompletionOptions, CompletionResult, Usage } from './openrouter';
+import type { CompletionOptions, CompletionResult, Usage } from './types';
 import {
   ProviderError,
   RETRYABLE_STATUS,
@@ -8,8 +8,11 @@ import {
   backoffMs,
 } from './provider-error';
 import { gateFor, sleep } from './resilience';
+import { keyring } from './keyring';
+import { ProviderUnavailable } from './oai';
+import { estimateTokens } from './types';
 
-export const estimateTokens = (text: string): number => Math.ceil(text.length / 4);
+export { estimateTokens };
 
 /** Hard ceiling on a single call, so a wedged upstream cannot stall a build. */
 const DEFAULT_TIMEOUT_MS = 75_000;
@@ -18,10 +21,28 @@ function cleanModelSlug(model: string): string {
   return model.replace(/^models\//, '').trim();
 }
 
-function getApiKey(): string {
-  const apiKey = process.env.GEMINI_API_KEY?.replace(/^["']|["']$/g, '').trim();
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
-  return apiKey;
+/**
+ * Claim rate-limit headroom on one of the configured Gemini keys.
+ *
+ * `GEMINI_API_KEY` accepts a comma-separated list, and Google meters each entry
+ * independently — so two keys are two 10-RPM allowances. On the tightest free
+ * tier in the registry that is the difference between a 26-week blueprint
+ * completing and stalling halfway.
+ *
+ * Throwing `ProviderUnavailable` rather than waiting is what lets the router
+ * move the work to Groq or Cerebras instead of sitting in Google's queue.
+ */
+async function claimKey(label?: string): Promise<{ key: string; index: number }> {
+  const ring = keyring('gemini');
+  if (ring.size === 0) throw new Error('GEMINI_API_KEY is not configured');
+
+  const claim = await ring.acquire(6_000);
+  if (!claim) {
+    const wait = ring.waitMs();
+    logger.debug({ provider: 'gemini', label, waitMs: wait }, 'ai.provider.no-headroom');
+    throw new ProviderUnavailable('gemini', wait);
+  }
+  return claim;
 }
 
 interface GeminiPart {
@@ -147,29 +168,43 @@ function withTimeout(signal: AbortSignal | undefined, ms: number) {
 export async function completeGemini(options: CompletionOptions): Promise<CompletionResult> {
   const retries = options.retries ?? 2;
   const started = Date.now();
-  const apiKey = getApiKey();
   const model = cleanModelSlug(options.model);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const owner = options.owner ?? 'shared';
 
   let lastError: unknown;
   let allowThinkingConfig = true;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     const { signal, done } = withTimeout(options.signal, options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+    // Which key served this attempt, so a 429 is charged to that key alone
+    // rather than to the whole keyring.
+    let keyIndex = -1;
 
     try {
-      const response = await gateFor('gemini').run(() =>
-        fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formatGeminiPayload(options, allowThinkingConfig)),
-          signal,
-        }),
-      );
+      const response = await gateFor('gemini').run(async () => {
+        const claim = await claimKey(options.label);
+        keyIndex = claim.index;
+        return fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${claim.key}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formatGeminiPayload(options, allowThinkingConfig)),
+            signal,
+          },
+        );
+      }, owner);
 
       if (!response.ok) {
         const detail = await response.text().catch(() => '');
         const retryAfterMs = parseRetryAfter(response.headers.get('retry-after'));
+
+        // Teach this key's bucket the real ceiling. Google's free tier enforces
+        // something tighter than it publishes, and being told is the only way
+        // to find out.
+        if (response.status === 429 && keyIndex >= 0) {
+          keyring('gemini').penalise(keyIndex, retryAfterMs);
+        }
 
         // Some slugs reject thinkingConfig outright. Drop it and retry, so one
         // model config stays portable across the Gemini model family.
@@ -191,6 +226,8 @@ export async function completeGemini(options: CompletionOptions): Promise<Comple
         }
         throw error;
       }
+
+      if (keyIndex >= 0) keyring('gemini').succeed(keyIndex);
 
       const data = await response.json();
       const candidate = data.candidates?.[0];
@@ -232,6 +269,9 @@ export async function completeGemini(options: CompletionOptions): Promise<Comple
     } catch (error) {
       lastError = error;
       if ((error as Error)?.name === 'AbortError' && options.signal?.aborted) throw error;
+      // No headroom is a routing signal, not a fault: retrying the same
+      // saturated key is exactly the wrong response.
+      if (error instanceof ProviderUnavailable) throw error;
       if (error instanceof ProviderError && error.fatalForModel) throw error;
       if (attempt >= retries) break;
       await sleep(backoffMs(attempt, 600));
@@ -250,26 +290,32 @@ export async function completeGemini(options: CompletionOptions): Promise<Comple
  * Streaming completion against the Google Gemini API via SSE.
  */
 export async function* streamGemini(options: CompletionOptions): AsyncGenerator<string, Usage, void> {
-  const apiKey = getApiKey();
   const model = cleanModelSlug(options.model);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+  const owner = options.owner ?? 'shared';
 
   // The gate covers connection setup only — holding a slot for the whole
   // stream would serialise the coach behind any in-flight build.
-  const response = await gateFor('gemini').run(() =>
-    fetch(endpoint, {
+  const claim = await gateFor('gemini').run(() => claimKey(options.label), owner);
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${claim.key}`,
+    {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // A streamed reply is conversational; let the model think if it wants to.
       body: JSON.stringify(formatGeminiPayload(options, true)),
       signal: options.signal,
-    }),
+    },
   );
 
   if (!response.ok || !response.body) {
     const detail = await response.text().catch(() => '');
-    throw geminiError(model, response.status, detail, parseRetryAfter(response.headers.get('retry-after')));
+    const retryAfterMs = parseRetryAfter(response.headers.get('retry-after'));
+    if (response.status === 429) keyring('gemini').penalise(claim.index, retryAfterMs);
+    throw geminiError(model, response.status, detail, retryAfterMs);
   }
+
+  keyring('gemini').succeed(claim.index);
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -325,4 +371,4 @@ export async function* streamGemini(options: CompletionOptions): AsyncGenerator<
   return final;
 }
 
-export type { Message };
+export type { Message } from './types';

@@ -78,7 +78,7 @@ export default async function PlansPage() {
             <EmptyState
               icon={<Target />}
               title="Build your first prep map"
-              description="Name what you're preparing for and when it's due. APEX finds the material and maps every day between now and then."
+              description="Name what you're preparing for and when it's due. Kairo finds the material and maps every day between now and then."
               action={
                 <Button asChild size="lg">
                   <Link href="/app/new">

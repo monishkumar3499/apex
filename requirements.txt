@@ -1,4 +1,4 @@
-# APEX Project Requirements
+# Kairo Project Requirements
 # NOTE: This is a Node.js / Next.js / TypeScript project, not a Python project.
 # To install dependencies, run `npm install` inside the `frontend` directory.
 
@@ -15,7 +15,7 @@ react-dom==19.0.0
 @supabase/supabase-js==2.46.1
 zod==3.24.1
 zustand==5.0.2
-framer-motion==11.15.0
+motion==13.2.0
 lucide-react==0.469.0
 pino==9.5.0
 react-markdown==9.0.1

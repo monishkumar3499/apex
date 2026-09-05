@@ -1,6 +1,7 @@
 import { searchVideos, searchPlaylists } from '../tools/youtube';
 import { searchWeb } from '../tools/tavily';
 import { scoreYouTube, scoreWeb, dedupe, type Curated } from './score';
+
 import { similarity, keywordCoverage } from './text';
 import { logger } from '../logger/pino';
 
@@ -104,6 +105,15 @@ export interface CurationResult {
     assigned: number;
     /** Topics that ended up with a genuinely on-topic resource. */
     covered: number;
+    /** Topics carrying at least one video or playlist. */
+    withVideo: number;
+    /**
+     * Topics whose video is unit- or subject-level rather than topic-specific.
+     *
+     * Reported rather than hidden: it is the honest measure of how much of the
+     * "every topic has something to watch" guarantee was met by adjacency.
+     */
+    fallbackVideo: number;
   };
 }
 
@@ -289,19 +299,113 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
     commit(topic, sameUnit.map((r) => r.url));
   }
 
-  const resources = dedupe(pool).filter((r) => r.score > 0.18);
-  const kept = new Set(resources.map((r) => r.url));
+  // ---- Dedupe, then repair anything the dedupe orphaned -------------------
+  const deduped = dedupe(pool);
+  const byUrl = new Map(deduped.map((r) => [r.url, r]));
+  // `dedupe` returns `Curated`, dropping the `unitIdx` the pool carried, so the
+  // unit each URL came from is kept alongside rather than read off the result.
+  const unitOf = new Map(pool.map((r) => [r.url, r.unitIdx]));
 
-  // Dedupe may have dropped a near-duplicate that an assignment pointed at.
   assignments.forEach((urls, topicIdx) => {
-    const surviving = urls.filter((u) => kept.has(u));
+    const surviving = urls.filter((u) => byUrl.has(u));
     if (surviving.length !== urls.length) assignments.set(topicIdx, surviving);
   });
 
+  /*
+    ---- Video guarantee ---------------------------------------------------
+
+    Every topic gets something watchable, because a topic whose only resource
+    is a PDF is a topic most learners will skip. This costs no extra searches:
+    it re-ranks the pool that pass one and pass two already fetched.
+
+    It is also where this file's stated principle — "attaching the wrong
+    resource is worse than attaching nothing" — has to be honoured rather than
+    waived. So the fallback ladder never reaches for an unrelated topic's
+    video. It descends through material that is defensibly *about the same
+    thing*, in order:
+
+      1. a video that clears the relevance floor for this topic
+      2. a video from the same unit — adjacent context, already the fallback
+         this file used for non-video material
+      3. the subject-level "complete course" playlist, which is legitimately
+         about every topic in the subject (see `startSubjectDiscovery`)
+
+    If none of those exist the topic keeps whatever it had. Nothing is invented.
+  */
+  const watchable = (url: string) => {
+    const kind = byUrl.get(url)?.kind;
+    return kind === 'video' || kind === 'playlist';
+  };
+
+  const videoPool = deduped.filter((r) => r.kind === 'video' || r.kind === 'playlist');
+
+  let withVideo = 0;
+  let fallbackVideo = 0;
+
+  for (const topic of input.topics) {
+    const urls = assignments.get(topic.idx) ?? [];
+    if (urls.some(watchable)) {
+      withVideo++;
+      continue;
+    }
+
+    const ranked = videoPool
+      .map((r) => {
+        const relevance = relevanceTo(topic, `${r.title} ${r.description}`);
+        const unitIdx = unitOf.get(r.url) ?? null;
+        const onTopic = relevance >= RELEVANCE_FLOOR;
+        const sameUnit = unitIdx === topic.unitIdx;
+        // Subject-level playlists have no unit; they are the last defensible
+        // rung, not a random pick, so they score above nothing and below both
+        // topic-specific and same-unit material.
+        const subjectWide = unitIdx === null && r.kind === 'playlist';
+        if (!onTopic && !sameUnit && !subjectWide) return null;
+
+        const tier = onTopic ? 2 : sameUnit ? 1 : 0;
+        const reuse = useCount.get(r.url) ?? 0;
+        return { resource: r, tier, value: relevance * 0.5 + r.score * 0.5 - reuse * 0.1 };
+      })
+      .filter((c): c is { resource: Curated; tier: number; value: number } => c !== null)
+      .sort((a, b) => b.tier - a.tier || b.value - a.value);
+
+    const pick = ranked[0];
+    if (!pick) continue;
+
+    // At the cap, the weakest existing pick makes room. Appending past the cap
+    // would quietly widen every topic's shelf and change what the scheduler
+    // hands to a `learn` item.
+    const room = urls.length >= RESOURCES_PER_TOPIC ? urls.slice(0, RESOURCES_PER_TOPIC - 1) : urls;
+    assignments.set(topic.idx, [...room, pick.resource.url]);
+    useCount.set(pick.resource.url, (useCount.get(pick.resource.url) ?? 0) + 1);
+
+    withVideo++;
+    if (pick.tier < 2) fallbackVideo++;
+  }
+
+  /*
+    ---- The shelf ---------------------------------------------------------
+
+    A resource is kept if it is good enough to browse (score gate) OR if some
+    topic points at it. The second half is the bug fix: the gate used to run
+    first and could delete a topic's only resource, leaving the topic with an
+    empty list and the library missing something the map linked to.
+  */
+  const referenced = new Set([...assignments.values()].flat());
+  const resources = deduped.filter((r) => r.score > 0.18 || referenced.has(r.url));
+
   const assigned = [...assignments.values()].reduce((s, a) => s + a.length, 0);
+  const empty = input.topics.filter((t) => !(assignments.get(t.idx) ?? []).length).length;
 
   logger.info(
-    { found: resources.length, assigned, covered, total: input.topics.length },
+    {
+      found: resources.length,
+      assigned,
+      covered,
+      withVideo,
+      fallbackVideo,
+      empty,
+      total: input.topics.length,
+    },
     'curation.complete',
   );
 
@@ -315,6 +419,8 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
       found: resources.length,
       assigned,
       covered,
+      withVideo,
+      fallbackVideo,
     },
   };
 }

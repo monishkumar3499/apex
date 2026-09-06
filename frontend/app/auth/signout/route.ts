@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
  *
  * The browser client can clear its own cookies, but only the ones it can see
  * from JavaScript. Doing it here removes the httpOnly refresh cookie too, so
- * "sign out" cannot leave a session that the *server* still considers valid —
+ * "sign out" cannot leave a session that the *server* still considers valid -
  * which looks to the learner like signing out did nothing.
  */
 export async function POST(request: Request) {

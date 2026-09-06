@@ -11,7 +11,7 @@ import { cn } from '../../lib/utils';
  * Five screens had each grown their own version of "a row of selectable
  * pills": the library filters, the intake date presets, the capacity presets,
  * the day-off picker and the heatmap view switch. They differed in height,
- * radius, selected treatment and — the part that actually mattered — three of
+ * radius, selected treatment and - the part that actually mattered - three of
  * the five were plain `<button>`s with no `aria-pressed` and no arrow-key
  * navigation, so a keyboard user had to tab through every option.
  *
@@ -54,7 +54,7 @@ export function Segmented<T extends string>({
   options: Array<SegmentedOption<T>>;
   className?: string;
   ariaLabel: string;
-  /** Scroll horizontally instead of wrapping — for long filter rows on a phone. */
+  /** Scroll horizontally instead of wrapping - for long filter rows on a phone. */
   scroll?: boolean;
 }) {
   return (
@@ -88,7 +88,7 @@ export function Segmented<T extends string>({
   );
 }
 
-/** Multi-select row of chips — the rest-days picker. */
+/** Multi-select row of chips - the rest-days picker. */
 export function SegmentedMulti<T extends string>({
   value,
   onChange,
@@ -102,7 +102,7 @@ export function SegmentedMulti<T extends string>({
   options: Array<SegmentedOption<T>>;
   className?: string;
   ariaLabel: string;
-  /** Split the row into equal columns — for the seven weekday buttons. */
+  /** Split the row into equal columns - for the seven weekday buttons. */
   equal?: boolean;
 }) {
   return (

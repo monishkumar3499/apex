@@ -1,8 +1,8 @@
 /**
  * The Kairo component layer.
  *
- * shadcn/ui conventions — Radix primitives, `cva` variants, `cn` merging, and
- * components owned in-repo rather than imported from a package — wired to
+ * shadcn/ui conventions - Radix primitives, `cva` variants, `cn` merging, and
+ * components owned in-repo rather than imported from a package - wired to
  * Kairo's own semantic tokens (`bg-surface`, `text-ink`, `bg-accent`) instead
  * of shadcn's default `background`/`foreground` names.
  *

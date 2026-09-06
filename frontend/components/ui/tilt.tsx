@@ -22,7 +22,7 @@ import { cn } from '../../lib/utils';
  *     touch either does nothing or latches on after a tap and looks broken, so
  *     it is not wired up at all below the `pointer: fine` line.
  *   • **Compositor only.** The pointer handler writes two CSS custom
- *     properties and nothing else. No React state, no re-render, no layout —
+ *     properties and nothing else. No React state, no re-render, no layout -
  *     the transform itself is declared in CSS (`.tilt-3d`) and stays on the
  *     GPU. Driving this through `useState` would re-render the subtree on
  *     every mouse move.

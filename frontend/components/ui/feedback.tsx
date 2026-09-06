@@ -93,8 +93,8 @@ export function EmptyState({
  * An inline notice attached to the thing it is about.
  *
  * Distinct from a toast: a toast is for something that just happened and can
- * be dismissed, a callout is for a standing condition — overdue work, a tight
- * budget — that stays true until the learner acts on it.
+ * be dismissed, a callout is for a standing condition - overdue work, a tight
+ * budget - that stays true until the learner acts on it.
  */
 export function Callout({
   tone = 'info',

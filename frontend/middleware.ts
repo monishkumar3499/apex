@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && pathname === '/login') {
     // `safeNext` can carry a query string, so build the URL rather than
-    // assigning to `pathname` — that would percent-encode the "?".
+    // assigning to `pathname` - that would percent-encode the "?".
     const target = safeNext(request.nextUrl.searchParams.get('next'), '/app');
     return NextResponse.redirect(new URL(target, request.nextUrl.origin));
   }

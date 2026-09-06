@@ -33,7 +33,7 @@ function sliceBalanced(input: string): string | null {
     }
   }
 
-  // Unbalanced — the model was cut off. Close what is still open.
+  // Unbalanced - the model was cut off. Close what is still open.
   return null;
 }
 

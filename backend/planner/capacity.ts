@@ -11,7 +11,7 @@ import { addDays, dayOfWeek, diffDays } from './calendar';
  *
  *   1. **The total covers a minimum viable syllabus.** Below that the scheduler
  *      defers most of the material and hands back a plan that is mostly marked
- *      optional — technically honest, practically useless.
+ *      optional - technically honest, practically useless.
  *   2. **At least one study day is long enough to hold one topic.** A plan made
  *      of 10-minute days cannot contain a 45-minute topic however many days it
  *      has; the work would be split into fragments that teach nothing.
@@ -39,7 +39,7 @@ const REVIEW_MULTIPLIER = 1.5;
 /**
  * The fewest topics that still make a plan worth having, per prep type.
  *
- * An exam is a breadth problem — a syllabus with twelve topics in it is not a
+ * An exam is a breadth problem - a syllabus with twelve topics in it is not a
  * syllabus. A skill is a depth problem, so fewer, longer topics are legitimate.
  * Hybrid carries both a certification blueprint and role competence.
  */
@@ -54,7 +54,7 @@ const MIN_TOPICS: Record<PrepType, number> = {
  *
  * An advanced learner genuinely can skip fundamentals, so holding them to a
  * beginner's hours would be a false gate. This discounts the *minimum*, never
- * the plan — the scheduler still spends every minute it is given.
+ * the plan - the scheduler still spends every minute it is given.
  */
 function levelFactor(level: string): number {
   const l = (level ?? '').toLowerCase();
@@ -163,7 +163,7 @@ const hours = (minutes: number) => Math.max(1, Math.round(minutes / 60));
  * Can a useful plan be built from these answers?
  *
  * Returns a verdict rather than throwing, so the intake wizard and the API
- * apply exactly the same rule — the wizard to explain why Continue is disabled,
+ * apply exactly the same rule - the wizard to explain why Continue is disabled,
  * the route to reject a request that bypassed it.
  */
 export function checkCapacity(input: BudgetInput & MinimumInput): CapacityVerdict {
@@ -189,7 +189,7 @@ export function checkCapacity(input: BudgetInput & MinimumInput): CapacityVerdic
       longestSession,
       reason: 'no-session',
       message:
-        `At least one kind of day needs ${MIN_SESSION_MINUTES} minutes or more — ` +
+        `At least one kind of day needs ${MIN_SESSION_MINUTES} minutes or more - ` +
         `a topic does not fit in less, so the plan would be split into fragments. ` +
         `Weekdays or weekends can be zero, just not both.`,
     };
@@ -205,7 +205,7 @@ export function checkCapacity(input: BudgetInput & MinimumInput): CapacityVerdic
       message:
         `That adds up to about ${hours(totalMinutes)}h, and this goal needs roughly ` +
         `${hours(floor)}h as a bare minimum. Add time per day or move the target ` +
-        `date back — otherwise most of the material would be deferred and marked ` +
+        `date back - otherwise most of the material would be deferred and marked ` +
         `optional rather than taught.`,
     };
   }

@@ -25,7 +25,7 @@ function cleanModelSlug(model: string): string {
  * Claim rate-limit headroom on one of the configured Gemini keys.
  *
  * `GEMINI_API_KEY` accepts a comma-separated list, and Google meters each entry
- * independently — so two keys are two 10-RPM allowances. On the tightest free
+ * independently - so two keys are two 10-RPM allowances. On the tightest free
  * tier in the registry that is the difference between a 26-week blueprint
  * completing and stalling halfway.
  *
@@ -69,8 +69,8 @@ interface GeminiRequestBody {
 
 /**
  * Gemini 2.5 models think by default, and thinking is both slow and billed
- * against the response. For a blueprint the schema does the reasoning — the
- * model is filling in a structure, not solving a problem — so the thinking
+ * against the response. For a blueprint the schema does the reasoning - the
+ * model is filling in a structure, not solving a problem - so the thinking
  * pass buys nothing and costs a second or more per call.
  *
  * Measured on this project: `gemini-2.5-flash` answers a small JSON prompt in
@@ -163,7 +163,7 @@ function withTimeout(signal: AbortSignal | undefined, ms: number) {
  * Non-streaming completion against the Google Gemini API.
  *
  * Retries here are for *transient* failures on this model only. Choosing a
- * different model is the router's job — see `runWithFallback`.
+ * different model is the router's job - see `runWithFallback`.
  */
 export async function completeGemini(options: CompletionOptions): Promise<CompletionResult> {
   const retries = options.retries ?? 2;
@@ -293,7 +293,7 @@ export async function* streamGemini(options: CompletionOptions): AsyncGenerator<
   const model = cleanModelSlug(options.model);
   const owner = options.owner ?? 'shared';
 
-  // The gate covers connection setup only — holding a slot for the whole
+  // The gate covers connection setup only - holding a slot for the whole
   // stream would serialise the coach behind any in-flight build.
   const claim = await gateFor('gemini').run(() => claimKey(options.label), owner);
 

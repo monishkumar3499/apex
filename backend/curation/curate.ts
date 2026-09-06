@@ -54,7 +54,7 @@ export interface CurationInput {
  * Subject-level searches that do not depend on the blueprint.
  *
  * A "complete course" playlist query and "<subject> official syllabus" need
- * only the subject and the prep type — both of which are known the moment the
+ * only the subject and the prep type - both of which are known the moment the
  * plan row is created, several seconds before the structure model returns.
  * Running them concurrently with that call removes their latency from the
  * build entirely rather than making them faster.
@@ -190,7 +190,7 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
 
   // ---- Assignment --------------------------------------------------------
   // A small reuse penalty spreads material across the plan instead of pinning
-  // one popular video to every topic — the exact failure mode of asking a model
+  // one popular video to every topic - the exact failure mode of asking a model
   // to "distribute the links".
   const useCount = new Map<string, number>();
 
@@ -199,7 +199,7 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
    *
    * A syllabus PDF or "complete course" page matches every topic's keywords
    * because it literally contains the syllabus. That makes it a plan-level
-   * document, not a lesson on any one topic — so breadth is a penalty here,
+   * document, not a lesson on any one topic - so breadth is a penalty here,
    * and a resource matching almost everything is treated as not covering
    * anything specifically.
    */
@@ -286,7 +286,7 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
       continue;
     }
 
-    // Still nothing on-topic. Fall back only to material from the SAME unit —
+    // Still nothing on-topic. Fall back only to material from the SAME unit -
     // adjacent context is defensible, a resource from another unit is not.
     const sameUnit = pool
       .filter((r) => r.unitIdx === topic.unitIdx)
@@ -318,14 +318,14 @@ export async function curateResources(input: CurationInput): Promise<CurationRes
     is a PDF is a topic most learners will skip. This costs no extra searches:
     it re-ranks the pool that pass one and pass two already fetched.
 
-    It is also where this file's stated principle — "attaching the wrong
-    resource is worse than attaching nothing" — has to be honoured rather than
+    It is also where this file's stated principle - "attaching the wrong
+    resource is worse than attaching nothing" - has to be honoured rather than
     waived. So the fallback ladder never reaches for an unrelated topic's
     video. It descends through material that is defensibly *about the same
     thing*, in order:
 
       1. a video that clears the relevance floor for this topic
-      2. a video from the same unit — adjacent context, already the fallback
+      2. a video from the same unit - adjacent context, already the fallback
          this file used for non-video material
       3. the subject-level "complete course" playlist, which is legitimately
          about every topic in the subject (see `startSubjectDiscovery`)

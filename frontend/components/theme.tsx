@@ -30,7 +30,7 @@ export const useTheme = () => React.useContext(ThemeContext);
 /**
  * Blocking script that applies the stored theme before first paint.
  *
- * Without this the app flashes light on every load for dark-mode users — and
+ * Without this the app flashes light on every load for dark-mode users - and
  * on Aurora Glass that flash is far worse than it was on the old palette,
  * because the two grounds are near-white and near-black.
  *
@@ -84,7 +84,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         {/*
           Both glyphs are rendered and cross-faded rather than swapped. A
           conditional swap remounts the icon, so the button visibly flickers
-          on every toggle — the one interaction where that is most obvious.
+          on every toggle - the one interaction where that is most obvious.
         */}
         <span className="relative block h-4 w-4">
           <Sun

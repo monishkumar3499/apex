@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="relative min-h-dvh">
       {/*
         `fixed`, not `absolute`. The plan list scrolls, and an absolutely
-        positioned void would scroll with it — so the aurora would slide off
+        positioned void would scroll with it - so the aurora would slide off
         the top of a long list and the page would end on flat black.
       */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">

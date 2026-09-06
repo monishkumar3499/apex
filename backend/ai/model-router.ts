@@ -30,7 +30,7 @@ export type Provider = ProviderId;
  * The chains are long and deliberately vendor-diverse, because on free tiers
  * **breadth is the only real capacity**. Quota is metered per key per vendor,
  * so the way to serve twenty learners is to hold eight independent buckets and
- * move between them — not to retry one bucket more politely.
+ * move between them - not to retry one bucket more politely.
  *
  * A slug may carry an explicit `provider:` prefix. Half of these vendors serve
  * the same Llama weights, and the prefix is the only way to say *which* copy of
@@ -48,7 +48,7 @@ export type Provider = ProviderId;
  * allow roughly 13,000 requests/day each; free `gemini-2.5-flash` allows about
  * 250; an OpenRouter `:free` slug allows 50 on an account under 10 credits.
  * That last number is why OpenRouter, which used to lead two of these three
- * chains, is now last in all of them — 50/day is a fifth of what one learner
+ * chains, is now last in all of them - 50/day is a fifth of what one learner
  * needs, never mind twenty.
  *
  * Unconfigured providers are filtered out at call time rather than listed
@@ -92,7 +92,7 @@ const CHAINS: Record<Tier, string[]> = {
 
 const clean = (value?: string) => value?.replace(/^["']|["']$/g, '').trim();
 
-/** The primary model for a tier — what the env var overrides. */
+/** The primary model for a tier - what the env var overrides. */
 export function modelFor(tier: Tier): string {
   return chainFor(tier)[0];
 }
@@ -105,7 +105,7 @@ export function modelFor(tier: Tier): string {
  * value is promoted to the head of the built-in chain rather than replacing it:
  * overriding the primary model should not silently discard every fallback.
  *
- * This is the *declaration*, independent of which keys happen to be present —
+ * This is the *declaration*, independent of which keys happen to be present -
  * `usableChain` is what actually gets called.
  */
 export function chainFor(tier: Tier): string[] {
@@ -151,7 +151,7 @@ export function usableChain(tier: Tier): string[] {
  *
  * Preserves the rule this codebase has always used: an unprefixed slug on the
  * structured tier is a Google model name, anything else unprefixed is an
- * OpenRouter route. Only reached for slugs absent from the registry — i.e. an
+ * OpenRouter route. Only reached for slugs absent from the registry - i.e. an
  * operator's env override for a model added after this code was written.
  */
 const tierProvider = (tier: Tier): ProviderId => (tier === 'structured' ? 'gemini' : 'openrouter');
@@ -205,8 +205,8 @@ export interface RunOptions extends Omit<CompletionOptions, 'model'> {
  * Two independent signals decide this, and conflating them was the flaw in the
  * previous version:
  *
- *   • the **model's** breaker — this slug is retired, or just failed
- *   • the **provider's** keyring — this vendor has no rate-limit headroom
+ *   • the **model's** breaker - this slug is retired, or just failed
+ *   • the **provider's** keyring - this vendor has no rate-limit headroom
  *
  * A perfectly healthy model on a saturated vendor should lose its place to a
  * slightly less preferred model on an idle one. Sorting by the sum of both
@@ -242,8 +242,8 @@ function orderByAvailability(chain: string[], tier: Tier): string[] {
  * Run a completion, walking the tier's fallback chain.
  *
  * Each client already retries transient faults against its own model. This
- * layer handles the other two failures: the model itself is unusable — retired,
- * or returning nothing — and the *provider* is out of headroom. They are
+ * layer handles the other two failures: the model itself is unusable - retired,
+ * or returning nothing - and the *provider* is out of headroom. They are
  * treated differently on purpose. A model failure opens that model's breaker; a
  * saturated provider does not, because the model did nothing wrong and
  * penalising it would remove it from the chain for the next learner too.
@@ -288,7 +288,7 @@ export async function run(options: RunOptions): Promise<string> {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 
-      // A caller-initiated abort is not a model failure — do not penalise the
+      // A caller-initiated abort is not a model failure - do not penalise the
       // model and do not try the next one.
       if ((error as Error)?.name === 'AbortError') throw error;
 
@@ -301,7 +301,7 @@ export async function run(options: RunOptions): Promise<string> {
           { label, model: ref, provider, waitMs: error.waitMs },
           'ai.chain.provider-saturated',
         );
-        // Not counted as an attempt — nothing was sent.
+        // Not counted as an attempt - nothing was sent.
         attempted--;
         continue;
       }
@@ -382,7 +382,7 @@ export function runStream(options: RunOptions): AsyncGenerator<string, Usage, vo
         const message = error instanceof Error ? error.message : String(error);
         errors.push(`${ref}: ${message.slice(0, 160)}`);
 
-        // A saturated provider is not this model's fault — see `run`.
+        // A saturated provider is not this model's fault - see `run`.
         if (!(error instanceof ProviderUnavailable)) breaker.recordFailure(ref, error);
 
         logger.warn({ label, model: ref, provider, remaining: chain.length - i - 1 }, 'ai.stream.falling-back');
@@ -460,7 +460,7 @@ export function providerHealth() {
   const configured = configuredProviders();
 
   return {
-    /** Independent quota buckets available — the real anti-rate-limit metric. */
+    /** Independent quota buckets available - the real anti-rate-limit metric. */
     buckets: configured.reduce((sum, id) => sum + keyring(id).size, 0),
     providers: configured.map((id) => ({
       provider: id,

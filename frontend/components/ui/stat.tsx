@@ -61,7 +61,7 @@ export function Stat({
 /**
  * A number that counts up when it first scrolls into view.
  *
- * Used only where the figure is a headline claim — a total, a streak. Applied
+ * Used only where the figure is a headline claim - a total, a streak. Applied
  * to every number on a screen it becomes noise, and it is skipped entirely
  * under `prefers-reduced-motion`, where a value that animates is the exact
  * thing being opted out of.
@@ -87,7 +87,7 @@ export function CountUp({
 
     `useReducedMotion` is `false` on the server and `true` on a client that has
     the setting on, so seeding from it made the server render "0" where the
-    client rendered "38" — a hydration mismatch that React reports and cannot
+    client rendered "38" - a hydration mismatch that React reports and cannot
     patch. Rendering the true figure up front is also the better no-JS and
     pre-hydration state: the number is correct before anything animates, rather
     than being a zero that only becomes true once JavaScript runs.

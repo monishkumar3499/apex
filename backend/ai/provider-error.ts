@@ -3,8 +3,8 @@ import type { ProviderId } from './providers';
 /**
  * One error type for every upstream model failure.
  *
- * The router has to decide three different things from a failed call — retry
- * now, fall back to another model, or give up — and it cannot do that from a
+ * The router has to decide three different things from a failed call - retry
+ * now, fall back to another model, or give up - and it cannot do that from a
  * string message. Carrying the HTTP status and the upstream's own `Retry-After`
  * is what makes "back off for exactly as long as the provider asked" possible
  * instead of guessing.
@@ -51,7 +51,7 @@ export class ProviderError extends Error {
    * The model will not start working on its own.
    *
    * A retired slug (404), a malformed request for this endpoint (400) or a
-   * rejected key (401/403) is not a transient blip — retrying it wastes the
+   * rejected key (401/403) is not a transient blip - retrying it wastes the
    * learner's time and the next model in the chain is the only way forward.
    */
   get fatalForModel() {
@@ -62,7 +62,7 @@ export class ProviderError extends Error {
 /** Statuses worth retrying against the same model. */
 export const RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504, 529]);
 
-/** Statuses that mean "this model is not going to work" — fall back instead. */
+/** Statuses that mean "this model is not going to work" - fall back instead. */
 export const MODEL_FATAL_STATUS = new Set([400, 401, 403, 404, 413, 422]);
 
 /**

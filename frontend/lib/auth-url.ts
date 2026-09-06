@@ -22,7 +22,7 @@ export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-/** Static assets and Next internals — never gated, never redirected. */
+/** Static assets and Next internals - never gated, never redirected. */
 export function isAssetPath(pathname: string): boolean {
   return (
     pathname.startsWith('/_next/') ||
@@ -49,7 +49,7 @@ export function safeNext(next: string | null | undefined, fallback = '/app'): st
   if (value.startsWith('//') || value.startsWith('/\\')) return fallback;
   // Control characters (a bare CR/LF included) can smuggle a second header.
   if (/[\u0000-\u001f\u007f]/.test(value)) return fallback;
-  // "/javascript:..." and friends — never a route in this app.
+  // "/javascript:..." and friends - never a route in this app.
   if (/^\/+[a-z][a-z0-9+.-]*:/i.test(value)) return fallback;
 
   return value;
@@ -61,7 +61,7 @@ export function safeNext(next: string | null | undefined, fallback = '/app'): st
  * Behind the reverse proxy on EC2 the request arrives as plain HTTP on an
  * internal host, so `new URL(request.url).origin` resolves to
  * `http://localhost:3000`. Every OAuth redirect then either lands on the
- * wrong host or downgrades an HTTPS session to HTTP — and a `Secure` auth
+ * wrong host or downgrades an HTTPS session to HTTP - and a `Secure` auth
  * cookie set on that response is silently dropped. That is a sign-in that
  * "does nothing", with no error surfaced anywhere.
  *

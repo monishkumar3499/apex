@@ -36,7 +36,7 @@ const HEATMAP_DAYS = 91;
 
 function streaks(dates: Set<string>, today: string): { current: number; longest: number } {
   let current = 0;
-  // A streak survives "not yet studied today" — it breaks only after a missed
+  // A streak survives "not yet studied today" - it breaks only after a missed
   // full day, otherwise every morning would show a reset to zero.
   let cursor = dates.has(today) ? today : addDays(today, -1);
   while (dates.has(cursor)) {

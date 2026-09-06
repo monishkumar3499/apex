@@ -112,7 +112,7 @@ describe('tier & provider resolution', () => {
 
   it('routes an explicit provider prefix, and strips it before the call', () => {
     // Half these vendors serve the same Llama weights, so the prefix is the
-    // only way to say which copy a chain entry means — and Groq has never
+    // only way to say which copy a chain entry means - and Groq has never
     // heard of a model called "groq:llama-3.3-70b-versatile".
     expect(resolveModel('groq:llama-3.3-70b-versatile')).toEqual({
       provider: 'groq',
@@ -407,7 +407,7 @@ describe('keyring', () => {
 
     const snapshot = ring.snapshot();
     expect(snapshot[0].waitMs).toBeGreaterThan(1_000);
-    // The second key was not implicated by the first key's exhaustion —
+    // The second key was not implicated by the first key's exhaustion -
     // treating it as if it were is how a multi-key setup ends up no faster
     // than a single-key one.
     expect(snapshot[1].waitMs).toBe(0);
@@ -472,7 +472,7 @@ describe('ProviderError classification', () => {
       fatalForModel: [400, 401, 403, 404, 413, 422].includes(status),
     });
 
-  it('treats 429 as retryable and not fatal — the model is fine, just busy', () => {
+  it('treats 429 as retryable and not fatal - the model is fine, just busy', () => {
     const error = make(429);
     expect(error.rateLimited).toBe(true);
     expect(error.retryable).toBe(true);

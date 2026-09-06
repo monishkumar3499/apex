@@ -45,7 +45,7 @@ export function ConfirmDialog({
           cancelRef.current?.focus();
         }}
         // A half-finished delete should not be dismissable by a stray click,
-        // but Escape still works — the keyboard user is being deliberate.
+        // but Escape still works - the keyboard user is being deliberate.
         onPointerDownOutside={(event) => loading && event.preventDefault()}
       >
         <DialogHeader>

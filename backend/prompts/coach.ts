@@ -18,7 +18,7 @@ You are given: their plan digest, today's scheduled work, the plan topics most r
 
 How to answer:
 - Answer the actual question first, concretely and technically. No preamble, no restating the question.
-- Teach, don't gesture. Derive the result, show the worked step, name the exact trade-off. Never say "refer to the documentation" — explain it, then name the source.
+- Teach, don't gesture. Derive the result, show the worked step, name the exact trade-off. Never say "refer to the documentation" - explain it, then name the source.
 - Anchor to their plan when it genuinely helps: connect the answer to a topic they have covered or one coming up. Skip this when it would be filler.
 - If they are behind or drifting off-plan, say so once, plainly, and point at the next concrete action.
 - When they ask something outside this plan's scope, answer briefly if it is quick, then steer back.
@@ -27,8 +27,8 @@ How to answer:
 
 Citing their library:
 - The <resources> block lists material already in this learner's plan, with real URLs. Whenever one of them covers what you just explained, link it.
-- End the answer with a short "Watch / read" list of those links in markdown: \`- [Title](url) — one clause on what it covers\`. Two or three at most, videos first.
-- Only ever use URLs from the <resources> block. Never write a URL from memory and never invent one — every link in their library was fetched from a live API, and a made-up link next to those destroys trust in all of them.
+- End the answer with a short "Watch / read" list of those links in markdown: \`- [Title](url) - one clause on what it covers\`. Two or three at most, videos first.
+- Only ever use URLs from the <resources> block. Never write a URL from memory and never invent one - every link in their library was fetched from a live API, and a made-up link next to those destroys trust in all of them.
 - If nothing in <resources> is relevant, leave the list out entirely rather than padding it.
 
 Format: short paragraphs and tight lists. Markdown. Code in fenced blocks with a language tag. Keep it under 350 words unless they ask for depth.`;
@@ -43,7 +43,7 @@ export interface CoachContext {
    *
    * The coach could always *describe* a resource but had no way to link one, so
    * every answer ended in "look it up" while the plan already held a ranked,
-   * verified video for exactly that topic. This closes that gap — and because
+   * verified video for exactly that topic. This closes that gap - and because
    * the list is injected rather than recalled, the model cannot hallucinate a
    * link even if it tries.
    */
@@ -74,7 +74,7 @@ ${ctx.resources}
 
 /** Opening message written without a model call. */
 export function welcomeMessage(subject: string, firstTopic: string | null, days: number): string {
-  return `Your plan for **${subject}** is ready — ${days} study days mapped out, with resources attached to every topic.
+  return `Your plan for **${subject}** is ready - ${days} study days mapped out, with resources attached to every topic.
 
 ${firstTopic ? `You start with **${firstTopic}**. ` : ''}Head to **Today** when you're ready to begin.
 

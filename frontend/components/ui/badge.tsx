@@ -20,7 +20,7 @@ const badgeVariants = cva(
       tone: {
         accent: 'border-accent/25 bg-accent/12 text-accent',
         /**
-         * The second accent, for quantity rather than state — a count, a
+         * The second accent, for quantity rather than state - a count, a
          * duration, a throughput. Keeping those on cyan is what stops violet
          * from meaning four different things at once.
          */

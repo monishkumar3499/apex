@@ -14,7 +14,7 @@ import { logger } from '../logger/pino';
  * The drill engine.
  *
  * Questions are generated per topic on first use and then reused forever, so
- * the model cost is paid once per topic a learner actually studies — not
+ * the model cost is paid once per topic a learner actually studies - not
  * up-front for 40 topics they may never reach.
  */
 
@@ -92,7 +92,7 @@ export async function ensureQuestions(params: {
       let options = Array.isArray(q.o) ? q.o.map(String).slice(0, 6) : [];
       let answer = String(q.a);
 
-      // An MCQ whose answer isn't among its options is unusable — demote it
+      // An MCQ whose answer isn't among its options is unusable - demote it
       // to a short-answer question rather than shipping a broken card.
       if (kind === 'mcq' && !options.includes(answer)) {
         if (options.length >= 2) options = [...options.slice(0, 3), answer];
@@ -121,7 +121,7 @@ export async function ensureQuestions(params: {
 
 /**
  * The drill queue: cards due for review first, then unseen cards from topics
- * already taught. Review always outranks new material — that is the whole
+ * already taught. Review always outranks new material - that is the whole
  * point of spaced repetition.
  */
 export async function drillQueue(params: {

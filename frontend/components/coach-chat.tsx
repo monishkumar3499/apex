@@ -131,7 +131,7 @@ export function CoachChat({
 
     `h-sm` still handles a phone in landscape, where the header and composer
     alone eat most of a 400px-tall viewport and the transcript would end up two
-    lines high — there, the page scrolls instead of the transcript.
+    lines high - there, the page scrolls instead of the transcript.
   */
   return (
     <div className="flex h-[calc(100dvh-var(--workspace-chrome))] flex-col h-sm:h-[calc(100dvh-8rem)]">
@@ -145,7 +145,7 @@ export function CoachChat({
               Your coach knows this plan
             </h2>
             <p className="mt-1.5 max-w-sm font-reading text-[0.9375rem] leading-relaxed text-ink-muted">
-              It can see your schedule, what you have finished, and where you are weakest — and it
+              It can see your schedule, what you have finished, and where you are weakest - and it
               will link the material already in your library. Ask it anything.
             </p>
           </div>
@@ -181,7 +181,7 @@ export function CoachChat({
       {/*
         ------------------------------------------------------ composer
 
-        Pinned to the bottom by the flex column above it — the transcript takes
+        Pinned to the bottom by the flex column above it - the transcript takes
         `flex-1`, so this sits on the floor whether there are two messages or
         two hundred. What made it *look* unpinned was the column's own height:
         it reserved ~3.5rem more chrome on a phone than actually exists, so the
@@ -262,7 +262,7 @@ export function CoachChat({
 
         <p className="pb-1 pt-2 text-center text-2xs text-ink-faint">
           Your whole plan is in context, and every link comes from your own library. The coach can
-          still be wrong — verify anything that matters.
+          still be wrong - verify anything that matters.
         </p>
       </div>
     </div>
@@ -285,7 +285,7 @@ function Avatar() {
  *
  * A CSS-only fix cannot contain a wide table: `overflow-x` on the table itself
  * needs `display: block`, which discards the table layout. The scroll has to
- * live on a wrapper, so the wrapper is added here — otherwise a four-column
+ * live on a wrapper, so the wrapper is added here - otherwise a four-column
  * comparison table from the coach makes the whole phone page pan sideways.
  */
 /** YouTube links get a play glyph; everything else an out-arrow. */
@@ -301,7 +301,7 @@ const MARKDOWN_COMPONENTS = {
     The coach is not the app; its links open away from it.
 
     They are also rendered as chips rather than as underlined text, because
-    nearly every one is now a citation into the learner's own library — a thing
+    nearly every one is now a citation into the learner's own library - a thing
     to click and watch, not a word in a sentence. The leading glyph says which
     kind before the label is read.
   */
@@ -360,8 +360,8 @@ function Bubble({
           /*
             The reading serif, at a slightly larger size than the UI.
 
-            Coach answers are the longest continuous prose in the app — often
-            300 words of explanation — and a UI sans at 14px is tuned for labels
+            Coach answers are the longest continuous prose in the app - often
+            300 words of explanation - and a UI sans at 14px is tuned for labels
             and buttons, not for paragraphs somebody is trying to learn from.
             Everything structural inside it (code, tables, headings) stays on
             the UI stack below.

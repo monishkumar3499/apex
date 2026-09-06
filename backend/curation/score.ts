@@ -5,8 +5,8 @@ import { canonicalUrl } from './text';
 /**
  * Resource quality scoring.
  *
- * Everything here is computed from real API metadata — view counts, like
- * ratios, publish dates, domains — never from a model's opinion. A model
+ * Everything here is computed from real API metadata - view counts, like
+ * ratios, publish dates, domains - never from a model's opinion. A model
  * cannot know that a video has 2M views and a 4% like rate; the API does.
  */
 
@@ -70,7 +70,7 @@ function durationFit(seconds: number): number {
   return 0.4;
 }
 
-/** Recency decay with a long half-life — fundamentals age slowly. */
+/** Recency decay with a long half-life - fundamentals age slowly. */
 function recencyFit(publishedAt: string): number {
   if (!publishedAt) return 0.6;
   const years = (Date.now() - new Date(publishedAt).getTime()) / (365.25 * 24 * 3600 * 1000);

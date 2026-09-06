@@ -82,7 +82,7 @@ export function PlanCard({
           The whole card is the link, via a stretched overlay rather than by
           wrapping the card in an <a>. Wrapping would put the options menu
           button inside the anchor, where a click has to be intercepted and
-          cancelled on every browser — and where a screen reader reads the
+          cancelled on every browser - and where a screen reader reads the
           menu as part of the plan's link text.
         */}
         <Link
@@ -166,7 +166,7 @@ export function PlanCard({
           </div>
         </div>
 
-        {/* Affordance that the card leads somewhere. Fine-pointer only — on
+        {/* Affordance that the card leads somewhere. Fine-pointer only - on
             touch there is no hover to reveal it, and it would just be noise. */}
         <ArrowUpRight
           aria-hidden
@@ -210,7 +210,7 @@ export function PlanCard({
         open={confirming}
         onOpenChange={setConfirming}
         title="Delete this plan?"
-        description={`"${plan.title}" and everything in it — schedule, resources, drill history and coach conversation — will be permanently removed. This cannot be undone.`}
+        description={`"${plan.title}" and everything in it - schedule, resources, drill history and coach conversation - will be permanently removed. This cannot be undone.`}
         confirmLabel="Delete permanently"
         onConfirm={remove}
         loading={deleting}

@@ -38,7 +38,7 @@ export function LibraryView({
   resources: LibraryResource[];
   /** Every topic in the plan, in syllabus order. Drives the topic filter row. */
   topics?: string[];
-  /** From `?q=` — the map links here with a topic title pre-filled. */
+  /** From `?q=` - the map links here with a topic title pre-filled. */
   initialQuery?: string;
 }) {
   const [filter, setFilter] = React.useState<Filter>('all');
@@ -59,7 +59,7 @@ export function LibraryView({
    * Topics that actually have something attached, in syllabus order.
    *
    * A chip that filters to nothing is a dead end, so the row shows only topics
-   * with at least one resource — and the count tells the learner what they will
+   * with at least one resource - and the count tells the learner what they will
    * get before they click.
    */
   const topicCounts = React.useMemo(() => {
@@ -182,7 +182,7 @@ export function LibraryView({
             Filter by topic.
 
             The Library holds every resource in the plan, and the question a
-            learner actually arrives with is "what have I got for *this* topic" —
+            learner actually arrives with is "what have I got for *this* topic" -
             which previously required knowing the topic's exact wording and
             typing it. A horizontal scroller rather than a wrapped block: on a
             26-week plan there are eighty of these, and wrapping them would bury

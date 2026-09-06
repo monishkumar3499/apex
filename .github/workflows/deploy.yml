@@ -46,7 +46,7 @@ jobs:
       - name: Production build
         working-directory: frontend
         env:
-          # Placeholders only. The build must not depend on real credentials —
+          # Placeholders only. The build must not depend on real credentials -
           # this step exists to catch compile errors, not to produce an artifact.
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
@@ -63,17 +63,41 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # ssh-action injects every name listed in `envs` as an unquoted,
+      # single-line `export NAME=VALUE`. ENV_FILE is a whole .env file, so the
+      # remote shell kept only its first line and then tried to *execute* the
+      # rest - leaving a one-line frontend/.env on the host and a deploy that
+      # fails its health check for missing config. Base64 reduces it to one
+      # token with no shell metacharacters, which survives that injection.
+      - name: Encode the env file for transport
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ENV_FILE:-}" ]; then
+            encoded="$(printf '%s' "$ENV_FILE" | base64 -w0)"
+            echo "::add-mask::$encoded"
+            echo "ENV_FILE_B64=$encoded" >> "$GITHUB_ENV"
+            echo "ENV_FILE secret encoded for transport."
+          else
+            echo "ENV_FILE_B64=" >> "$GITHUB_ENV"
+            echo "No ENV_FILE secret set - the host's existing frontend/.env will be reused."
+          fi
+
       - name: Deploy on EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
+          ENV_FILE_B64: ${{ env.ENV_FILE_B64 }}
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Passed as an env var rather than interpolated into the script body,
+          # so a ref name can never be read as shell syntax.
+          TARGET_REF: ${{ github.ref_name }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: ENV_FILE,SUPABASE_URL,SUPABASE_ANON_KEY
+          envs: ENV_FILE_B64,SUPABASE_URL,SUPABASE_ANON_KEY,TARGET_REF
           timeout: 60s
           command_timeout: 30m
           script: |
@@ -82,30 +106,53 @@ jobs:
             # Accept either directory name: the host was provisioned as
             # ~/apex before the rename to Kairo, and a deploy must not depend on
             # someone having renamed it by hand first.
-            REPO_DIR="$(ls -d ~/kairo ~/apex 2>/dev/null | head -1)"
+            #
+            # Tested with [ -d ], not ls. `ls -d ~/kairo ~/apex` exits non-zero
+            # the moment ONE of the two is missing - the normal case - and under
+            # `set -euo pipefail` that killed the deploy on its very first
+            # command, before the message below could ever print.
+            REPO_DIR=""
+            for candidate in "$HOME/kairo" "$HOME/apex"; do
+              if [ -d "$candidate/.git" ]; then
+                REPO_DIR="$candidate"
+                break
+              fi
+            done
+
             if [ -z "$REPO_DIR" ]; then
-              echo "Neither ~/kairo nor ~/apex exists on the host."
+              echo "No git checkout found at ~/kairo or ~/apex on the host."
               exit 1
             fi
+
             cd "$REPO_DIR"
+            echo "Deploying $TARGET_REF into $REPO_DIR"
 
-            git fetch origin ${{ github.ref_name }}
-            git reset --hard origin/${{ github.ref_name }}
+            # FETCH_HEAD rather than origin/$TARGET_REF: a single-ref fetch only
+            # updates the remote-tracking branch when the clone carries the
+            # default refspec, so a host cloned with --single-branch would
+            # otherwise reset to a stale commit and "succeed".
+            git fetch --prune origin "$TARGET_REF"
+            git reset --hard FETCH_HEAD
 
-            # If ENV_FILE is provided via GitHub Secrets, write it securely
-            if [ -n "${ENV_FILE:-}" ]; then
-              printf '%s\n' "$ENV_FILE" > frontend/.env
+            # Restored from the base64 produced by the encode step above.
+            if [ -n "${ENV_FILE_B64:-}" ]; then
+              umask 077
+              printf '%s' "$ENV_FILE_B64" | base64 -d > frontend/.env
               chmod 600 frontend/.env
               echo "Synced frontend/.env securely from GitHub Secrets."
             fi
 
             # Fall back to the values already in frontend/.env on the host, so a
             # deploy still works before the repository secrets are populated.
+            #
+            # The trailing `|| true` is load-bearing: grep exits 1 when the key
+            # is absent, and under pipefail that aborted the script instead of
+            # reaching the explanatory error below.
             if [ -z "${SUPABASE_URL:-}" ] && [ -f frontend/.env ]; then
-              SUPABASE_URL="$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' frontend/.env | head -1 | cut -d= -f2- | tr -d '\042\047' )"
+              SUPABASE_URL="$(grep -E '^NEXT_PUBLIC_SUPABASE_URL=' frontend/.env | head -1 | cut -d= -f2- | tr -d '\042\047' || true)"
             fi
             if [ -z "${SUPABASE_ANON_KEY:-}" ] && [ -f frontend/.env ]; then
-              SUPABASE_ANON_KEY="$(grep -E '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' frontend/.env | head -1 | cut -d= -f2- | tr -d '\042\047' )"
+              SUPABASE_ANON_KEY="$(grep -E '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' frontend/.env | head -1 | cut -d= -f2- | tr -d '\042\047' || true)"
             fi
 
             if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
@@ -114,6 +161,13 @@ jobs:
               echo "secrets, or make sure frontend/.env on the host defines them."
               exit 1
             fi
+
+            # A Next build wants ~2GB and the image tree is large. Record what
+            # the host had to work with: an OOM kill or a full disk otherwise
+            # surfaces only as a bare non-zero exit from docker build.
+            echo "Host resources before build:"
+            df -h "$REPO_DIR" | tail -1 || true
+            free -m 2>/dev/null | head -2 || true
 
             docker build \
               --build-arg NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL" \

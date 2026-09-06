@@ -22,7 +22,7 @@ import {
  * Groq, Cerebras, Mistral, Cloudflare Workers AI, Together, GitHub Models and
  * OpenRouter all speak the same `/chat/completions` dialect. Writing seven
  * clients for that would mean maintaining the same seven awkward details seven
- * times over — the reasoning-token budget trap, providers that echo their
+ * times over - the reasoning-token budget trap, providers that echo their
  * reasoning trace into `content`, `finish_reason: "length"` on a budget the
  * thinking pass ate, failures tunnelled inside a 200 response. Those are
  * dialect problems, not vendor problems, so they are solved once here.
@@ -38,7 +38,7 @@ const DEFAULT_TIMEOUT_MS = 90_000;
  * is told to try a different provider instead.
  *
  * Six seconds is roughly the point at which moving to another vendor is faster
- * than waiting for this one — and with eight buckets, there is almost always
+ * than waiting for this one - and with eight buckets, there is almost always
  * another vendor.
  */
 const MAX_BUCKET_WAIT_MS = 6_000;
@@ -144,7 +144,7 @@ async function claimKey(provider: ProviderId, label?: string) {
  * Detect the two ways a reasoning model returns nothing useful.
  *
  * Some providers echo the reasoning trace into `content`. That is prose, not an
- * answer, and no amount of JSON repair will rescue it — observed on
+ * answer, and no amount of JSON repair will rescue it - observed on
  * `nvidia/nemotron-3.5-lightning:free`, which opens with "Here's a thinking
  * process:", hence the prefix check as well as the equality one.
  */
@@ -224,7 +224,7 @@ export async function completeOai(
         const error = oaiError(provider, options.model, response.status, detail, retryAfterMs);
         if (error.retryable && attempt < retries) {
           // Free-tier upstreams stay rate-limited for seconds, not
-          // milliseconds, so 429 backs off from a much larger base — and
+          // milliseconds, so 429 backs off from a much larger base - and
           // honours Retry-After exactly when the upstream supplies it.
           const wait = retryAfterMs ?? backoffMs(attempt, response.status === 429 ? 4_000 : 700);
           logger.warn(
@@ -355,7 +355,7 @@ export async function* streamOai(
   const maxTokens = options.maxTokens ?? 2000;
   const owner = options.owner ?? 'shared';
 
-  // The gate covers connection setup only — holding a slot for the whole
+  // The gate covers connection setup only - holding a slot for the whole
   // stream would serialise the coach behind any in-flight build.
   const claimed = await gateFor(provider).run(() => claimKey(provider, options.label), owner);
 

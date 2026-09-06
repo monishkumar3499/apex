@@ -25,11 +25,11 @@ const EXCLUDED = [
   'twitter.com',
 ];
 
-/** Single Tavily search. Failures degrade to an empty list — never fatal. */
+/** Single Tavily search. Failures degrade to an empty list - never fatal. */
 export async function searchWeb(query: string, options: SearchOptions = {}): Promise<WebResult[]> {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
-    logger.warn('TAVILY_API_KEY missing — skipping web discovery');
+    logger.warn('TAVILY_API_KEY missing - skipping web discovery');
     return [];
   }
 

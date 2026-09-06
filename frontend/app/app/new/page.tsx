@@ -108,7 +108,7 @@ export default function NewPlanPage() {
     The capacity verdict, from the same module the API validates with.
 
     Previously this screen counted the total itself and warned below a flat
-    900 minutes, while the route enforced an unrelated per-weekday floor — so
+    900 minutes, while the route enforced an unrelated per-weekday floor - so
     the wizard could happily submit a plan the server would reject, and reject
     plans the server would have accepted. One implementation, two callers.
   */
@@ -155,7 +155,7 @@ export default function NewPlanPage() {
       setIntake(body.data as Intake);
       go(1);
     } catch (error) {
-      // Classification is a nicety, not a gate — let them proceed regardless.
+      // Classification is a nicety, not a gate - let them proceed regardless.
       toast.error((error as Error).message);
       setIntake({
         pt: 'skill', sub: goal.trim(), slug: goal.trim().toLowerCase().replace(/\s+/g, '-'),
@@ -220,7 +220,7 @@ export default function NewPlanPage() {
       {/*
         The panel is height-animated between steps rather than swapped. Each
         step is a different height, and without this the sticky footer jumps up
-        or down the moment you press Continue — which reads as a layout bug
+        or down the moment you press Continue - which reads as a layout bug
         rather than as a transition.
       */}
       <div className="perspective-1200 relative overflow-hidden">
@@ -230,7 +230,7 @@ export default function NewPlanPage() {
             custom={direction}
             // The step turns in from the side it came from, rather than sliding
             // flat. Direction is preserved on the way back, so going *back* a
-            // step visibly reverses the motion — which is what tells a learner
+            // step visibly reverses the motion - which is what tells a learner
             // they undid something rather than advanced.
             initial={{ opacity: 0, x: direction * 40, rotateY: direction * 10, z: -90 }}
             animate={{ opacity: 1, x: 0, rotateY: 0, z: 0 }}
@@ -241,7 +241,7 @@ export default function NewPlanPage() {
             {step === 0 && (
               <Step
                 title="What are you preparing for?"
-                sub="An exam, a certification, a role — anything with a finish line."
+                sub="An exam, a certification, a role - anything with a finish line."
               >
                 <FormField label="Your goal" htmlFor="goal">
                   <Textarea
@@ -369,7 +369,7 @@ export default function NewPlanPage() {
 
                 {datesValid && (
                   <Callout tone="info" icon={<Target />} title={`${weeks} weeks to prepare`}>
-                    Everything — units, review, checkpoints and mocks — is laid out inside that window.
+                    Everything - units, review, checkpoints and mocks - is laid out inside that window.
                   </Callout>
                 )}
               </Step>
@@ -497,7 +497,7 @@ export default function NewPlanPage() {
 /**
  * The step rail.
  *
- * An orbit rail, like every other ordered thing in Kairo — but horizontal, because
+ * An orbit rail, like every other ordered thing in Kairo - but horizontal, because
  * these four steps are a short linear run rather than a long schedule.
  *
  * Completed steps are clickable so a learner can go back and change an answer
@@ -655,7 +655,7 @@ function DetectedCard({ intake, onChange }: { intake: Intake; onChange: (pt: Int
  * Minutes per day.
  *
  * A slider gives the coarse shape of the answer and the presets give the exact
- * one — a learner who knows they have exactly 90 minutes should not have to
+ * one - a learner who knows they have exactly 90 minutes should not have to
  * land a slider thumb on it.
  */
 function MinutesField({
@@ -697,8 +697,8 @@ function MinutesField({
 
       {/*
         The row scrolls on a phone and wraps once there is room. The edge fade
-        only applies while it scrolls — a chip clipped flat at the edge reads as
-        a rendering fault, whereas a faded one reads as "there is more" — and is
+        only applies while it scrolls - a chip clipped flat at the edge reads as
+        a rendering fault, whereas a faded one reads as "there is more" - and is
         removed at `sm`, where a fade over a wrapped row would just dim the last
         chip for no reason.
       */}

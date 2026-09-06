@@ -52,7 +52,7 @@ async function call(path: string, params: Record<string, string>): Promise<any> 
 
 /**
  * Search videos and hydrate them with real duration + engagement metrics.
- * `maxResults` is capped at 25 — beyond that the marginal result quality
+ * `maxResults` is capped at 25 - beyond that the marginal result quality
  * drops faster than the ranking can compensate.
  */
 export async function searchVideos(query: string, maxResults = 10): Promise<YouTubeItem[]> {

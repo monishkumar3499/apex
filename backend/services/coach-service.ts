@@ -20,7 +20,7 @@ const RETRIEVED_TOPICS = 3;
  * How many of the learner's own resources to put in front of the model.
  *
  * The prompt asks for two or three links, so shipping ten only invites it to
- * pick the least relevant ones — and every line here is prompt tokens on every
+ * pick the least relevant ones - and every line here is prompt tokens on every
  * single turn.
  */
 const RETRIEVED_RESOURCES = 6;
@@ -172,7 +172,7 @@ export async function buildCoachTurn(params: {
       return {
         watchable,
         line: [
-          `• [${r.kind}${minutes}] ${r.title}${r.author ? ` — ${r.author}` : ''}`,
+          `• [${r.kind}${minutes}] ${r.title}${r.author ? ` - ${r.author}` : ''}`,
           `  ${r.url}`,
           `  for: ${titleById.get(link.topic_id) ?? 'this plan'}`,
         ].join('\n'),

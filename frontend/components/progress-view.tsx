@@ -51,7 +51,7 @@ const STATUS_COPY: Record<
   },
   behind: {
     label: 'Behind schedule', tone: 'danger', icon: TrendingDown,
-    line: 'Meaningfully behind. Reschedule, or move the target date — do not just study faster.',
+    line: 'Meaningfully behind. Reschedule, or move the target date - do not just study faster.',
   },
 };
 
@@ -109,7 +109,7 @@ export function ProgressView({
           </div>
 
           {/*
-            Progress against an expectation marker — one axis, no dual scale.
+            Progress against an expectation marker - one axis, no dual scale.
             The marker's label is clamped away from both ends so it never runs
             off the edge of the card on a narrow screen.
           */}
@@ -157,7 +157,7 @@ export function ProgressView({
         {/*
           Two columns on a phone, four from `sm` up. The old `lg:grid-cols-4`
           only kicked in at a 1024px *viewport*, but this column is capped well
-          below that — so on a laptop the tiles stayed stacked two-wide with
+          below that - so on a laptop the tiles stayed stacked two-wide with
           half the row empty.
         */}
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
@@ -213,9 +213,9 @@ export function ProgressView({
               {formatDate(data.projectedFinish, { year: 'numeric' })}
             </span>
             {late ? (
-              <span className="text-warn"> — after your target.</span>
+              <span className="text-warn"> - after your target.</span>
             ) : (
-              <span className="text-success"> — comfortably inside your target.</span>
+              <span className="text-success"> - comfortably inside your target.</span>
             )}
           </p>
         </Card>
@@ -223,7 +223,7 @@ export function ProgressView({
 
       {/*
         Mastery and weak topics sit side by side once there is room. They are
-        read together — "where am I strong" and "what do I do about it" — and
+        read together - "where am I strong" and "what do I do about it" - and
         stacking them on a wide screen pushes the answer below the fold.
       */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -267,7 +267,7 @@ export function ProgressView({
 /**
  * Horizontal bars, one series.
  *
- * One series means no legend and one colour — the title names what is measured.
+ * One series means no legend and one colour - the title names what is measured.
  * Values are direct-labelled at the bar end because the value *is* the point
  * here; there is no axis to carry it.
  */

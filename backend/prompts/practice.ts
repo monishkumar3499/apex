@@ -1,5 +1,5 @@
 /**
- * Drill question generation — lazy and cached.
+ * Drill question generation - lazy and cached.
  *
  * Questions are generated the first time a learner drills a topic, not during
  * the plan build. On a 40-topic plan that defers (and usually avoids
@@ -13,13 +13,13 @@ Schema:
 
 Rules:
 - Test understanding, not recall of wording. A learner who memorised the definition should still be able to get it wrong.
-- MCQ distractors must encode real misconceptions in this topic — the mistake a learner actually makes. Never use filler options ("None of the above", obviously absurd values).
+- MCQ distractors must encode real misconceptions in this topic - the mistake a learner actually makes. Never use filler options ("None of the above", obviously absurd values).
 - "a" must be character-identical to one entry in "o" for mcq.
 - "e" is 1-2 sentences. Name the misconception the distractor represents.
 - "flash" items are for the atoms worth memorising (a formula, a definition, a threshold). "o" is [] for flash and short.
 - Vary d across the set. Include at least one question at d>=4 that requires combining two ideas.
 - Use the notation and units a practitioner in this field would use.
-- No references to "the video", "the course", or "the lecture" — questions must stand alone.`;
+- No references to "the video", "the course", or "the lecture" - questions must stand alone.`;
 
 export interface PracticeQuestion {
   k: 'mcq' | 'short' | 'flash';

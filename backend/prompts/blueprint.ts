@@ -1,5 +1,5 @@
 /**
- * Stage 2 — Structure generation.
+ * Stage 2 - Structure generation.
  *
  * The single substantial model call in a plan build. It emits ONLY the
  * knowledge structure (units → topics) plus one search intent per unit.
@@ -14,7 +14,7 @@
  * ---------------------------------------------------------------------------
  * Why the prompt reads the way it does
  *
- * The failure mode of a curriculum model is not inaccuracy — it is producing a
+ * The failure mode of a curriculum model is not inaccuracy - it is producing a
  * syllabus that is *correct and unusable*. Left alone it emits titles like
  * "Advanced Transform-Domain Techniques and Their Applications", estimates
  * four hours of first-pass study, and fuses three ideas into one entry. A
@@ -37,7 +37,7 @@
  *   Ramped difficulty        New material lands on top of something already
  *                            secure, so each unit starts easy and climbs.
  *   Recognisable titles      A title has to mean something *before* the topic
- *                            is studied — that is what makes a plan feel
+ *                            is studied - that is what makes a plan feel
  *                            navigable instead of intimidating.
  * ---------------------------------------------------------------------------
  */
@@ -47,7 +47,7 @@
  *
  * It is part of the blueprint cache key. Without it, every learner who already
  * generated a plan for a subject keeps being served the structure produced by
- * the *previous* prompt — so a change to how coursework is shaped silently
+ * the *previous* prompt - so a change to how coursework is shaped silently
  * never reaches the people it was written for.
  */
 export const BLUEPRINT_VERSION = 2;
@@ -58,7 +58,7 @@ export const TOPIC_MAX_MINUTES = 120;
 
 export const BLUEPRINT_SYSTEM = `You are a curriculum architect who designs for real learners, not for catalogues. Output ONLY compact JSON. No prose, no code fences, no markdown.
 
-Schema (keys are abbreviated — use exactly these):
+Schema (keys are abbreviated - use exactly these):
 {"u":[{"t":"unit title","s":"one-line scope","w":1-5,"q":["youtube search query"],"tp":[{"t":"topic title","s":"one line: what this topic is","o":["observable outcome"],"k":["keyword"],"m":60,"d":1-5,"w":1-5,"dep":[]}]}]}
 
 Field meanings:
@@ -79,10 +79,10 @@ COVERAGE RULES
 - Order matters: prerequisites first. dep is for cross-unit needs only.
 - No URLs, no channel names, no book titles, no dates, no day numbers.
 
-LEARNER RULES — these decide whether the plan gets used at all
+LEARNER RULES - these decide whether the plan gets used at all
 - ONE IDEA PER TOPIC. If a title needs "and", or "introduction to X and Y", it is two topics. Split it.
 - SIZE FOR A SITTING. m must be between ${TOPIC_MIN_MINUTES} and ${TOPIC_MAX_MINUTES}; aim for 40-75. Anything a learner cannot finish in one or two sittings must be split into separate topics, not estimated larger.
-- START WITH WINS. The first 2-3 topics of unit 1 must be d=1 or d=2 — something a nervous beginner can complete on day one.
+- START WITH WINS. The first 2-3 topics of unit 1 must be d=1 or d=2 - something a nervous beginner can complete on day one.
 - RAMP THE DIFFICULTY. Inside every unit, d generally increases. Never open a unit at d=5.
 - WRITE TITLES A LEARNER RECOGNISES BEFORE STUDYING. Specific and searchable, but in the words a learner would use: "Setup and hold time violations", not "Temporal constraint analysis in synchronous digital systems". Never "Timing concepts".
 - s is one plain sentence a beginner understands. No jargon that the topic itself is about to teach.
@@ -106,7 +106,7 @@ LEARNER RULES — these decide whether the plan gets used at all
                  topics for a slice of those units.
 
    Wall-clock becomes `outline + slowest shard` rather than the sum, and the
-   shards also fail independently — losing one unit's topics degrades the plan
+   shards also fail independently - losing one unit's topics degrades the plan
    instead of failing the build.
 
    Why not one call per unit: the free Gemini tier allows ~10 requests per
@@ -152,13 +152,13 @@ export const OUTLINE_SCHEMA_HINT = '{"u":[{"t":"string","s":"string","w":3,"q":[
  * Topics for one slice of the outline.
  *
  * The full unit list is included as context so a shard knows what the *other*
- * shards are covering and does not duplicate their material — the main failure
+ * shards are covering and does not duplicate their material - the main failure
  * mode of generating a syllabus in pieces.
  *
  * `dep` is local to the shard: a shard cannot know the global ordinal of a
  * topic another shard has not produced yet. The merge step offsets these into
  * global indices. Cross-shard prerequisites are therefore lost, which costs
- * little — shards are unit-aligned and units are already in teaching order, so
+ * little - shards are unit-aligned and units are already in teaching order, so
  * almost every real dependency is within a shard.
  */
 export const TOPICS_SYSTEM = `You are a curriculum architect who designs for real learners, not for catalogues. Output ONLY compact JSON. No prose, no code fences, no markdown.
@@ -178,7 +178,7 @@ d   conceptual difficulty 1-5
 w   importance 1-5
 dep 1-based positions WITHIN YOUR OWN RESPONSE, counting topics in the order you emit them, that must be understood first. Usually [] or one entry. Never reference a later position.
 
-LEARNER RULES — these decide whether the plan gets used at all
+LEARNER RULES - these decide whether the plan gets used at all
 - ONE IDEA PER TOPIC. If a title needs "and", or "introduction to X and Y", it is two topics. Split it.
 - SIZE FOR A SITTING. m must be between ${TOPIC_MIN_MINUTES} and ${TOPIC_MAX_MINUTES}; aim for 40-75. Anything a learner cannot finish in one or two sittings must be split into separate topics, not estimated larger.
 - RAMP THE DIFFICULTY. Inside every unit, d generally increases. Never open a unit at d=5.
@@ -214,7 +214,7 @@ Full unit list for this syllabus, in teaching order:
 ${allUnitTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
 Write topics for ONLY these units:
-${shardUnits.map((u) => `- ${u.t}${u.s ? ` — ${u.s}` : ''}${u.w ? ` (weight ${u.w}/5)` : ''}`).join('\n')}
+${shardUnits.map((u) => `- ${u.t}${u.s ? ` - ${u.s}` : ''}${u.w ? ` (weight ${u.w}/5)` : ''}`).join('\n')}
 
 Produce EXACTLY ${topicTarget} topics in total across those units, distributed by weight.
 The m values should average about ${averageMinutes} minutes and must each stay within ${TOPIC_MIN_MINUTES}-${TOPIC_MAX_MINUTES}.
@@ -222,7 +222,7 @@ The m values should average about ${averageMinutes} minutes and must each stay w
 ${levelGuidance(req.level)}
 ${
   isFirstShard
-    ? 'START WITH WINS: the first 2-3 topics of the first unit must be d=1 or d=2 — something a nervous beginner can complete on day one.'
+    ? 'START WITH WINS: the first 2-3 topics of the first unit must be d=1 or d=2 - something a nervous beginner can complete on day one.'
     : ''
 }
 
@@ -268,7 +268,7 @@ function asArray<T>(value: unknown): T[] {
  * The schema asks for arrays, but the field notes say things like "ONE natural
  * search query", and models take that literally and emit a bare string. Every
  * downstream `.map`/`.slice` then throws mid-build. Normalising once here means
- * the rest of the pipeline — and anything read back out of `blueprint_cache` —
+ * the rest of the pipeline - and anything read back out of `blueprint_cache` -
  * can trust the types.
  *
  * The minute clamp is here rather than only in the prompt because a prompt
@@ -298,7 +298,7 @@ export function normalizeBlueprint(raw: unknown): BlueprintResult {
             d: t.d === undefined ? undefined : Number(t.d),
             w: t.w === undefined ? undefined : Number(t.w),
             // Positive integers only. `Number(null)` is 0 and 0 is finite, so
-            // a null in the list used to survive as dependency "0" — which is
+            // a null in the list used to survive as dependency "0" - which is
             // not a valid 1-based ordinal and pointed one topic before the
             // first one.
             dep: asArray<unknown>(t.dep)
@@ -343,7 +343,7 @@ function levelGuidance(level: string): string {
     return 'This learner already works in the area. Skip orientation material, assume the vocabulary, and spend the budget on the hard and commonly-failed parts. Topics can sit at d=3-5 from the start of unit 2 onward.';
   }
   if (normalised.startsWith('inter')) {
-    return 'This learner knows the basics but has gaps. Do not re-teach foundations from zero — name them briefly and move to the parts people actually get wrong. Keep m near 45-75.';
+    return 'This learner knows the basics but has gaps. Do not re-teach foundations from zero - name them briefly and move to the parts people actually get wrong. Keep m near 45-75.';
   }
   return 'This learner is starting fresh. Steps must be small: prefer more topics of 30-60 minutes over fewer long ones. Introduce vocabulary before using it, and make the first day genuinely easy.';
 }
@@ -351,7 +351,7 @@ function levelGuidance(level: string): string {
 export function blueprintUser(req: BlueprintRequest): string {
   const focus =
     req.prepType === 'exam'
-      ? 'Mirror the official syllabus. Set w from real exam weightage. Favour breadth of coverage — an unexamined unit is a lost mark.'
+      ? 'Mirror the official syllabus. Set w from real exam weightage. Favour breadth of coverage - an unexamined unit is a lost mark.'
       : req.prepType === 'skill'
         ? 'Mirror what the role actually does day to day. Set w from how often the skill is used and screened for. Favour depth on the load-bearing fundamentals.'
         : 'Cover the certification syllabus, then the practical skills the role needs beyond it.';

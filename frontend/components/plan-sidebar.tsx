@@ -141,14 +141,14 @@ export function PlanSidebar({
   /**
    * `scope` namespaces the sliding indicator's `layoutId`.
    *
-   * The drawer and the desktop rail are both mounted at once — the rail is
-   * only hidden with CSS — so a single shared id would leave Motion with two
+   * The drawer and the desktop rail are both mounted at once - the rail is
+   * only hidden with CSS - so a single shared id would leave Motion with two
    * claimants for the same element, and the indicator would vanish from one
    * of them. One id per rail.
    */
   /**
    * `collapsed` is passed rather than read from `mini`, because the drawer
-   * renders the same list and must never collapse — it is a full-width panel
+   * renders the same list and must never collapse - it is a full-width panel
    * on a phone, where an icon-only rail would be pointless.
    */
   const navList = (scope: 'rail' | 'drawer', collapsed = false) => (
@@ -200,7 +200,7 @@ export function PlanSidebar({
           return (
             <li key={slug}>
               {collapsed ? (
-                <Hint label={`${label} — ${hint}`} side="right">
+                <Hint label={`${label} - ${hint}`} side="right">
                   {link}
                 </Hint>
               ) : (
@@ -423,8 +423,8 @@ export function PlanSidebar({
           /*
             Collapsed, the rail keeps exactly what is still legible at 68px: the
             mark, the six section icons, and the account controls. Everything
-            that depends on reading text — the plan title, the progress bar, the
-            streak — is dropped rather than truncated, because a clipped plan
+            that depends on reading text - the plan title, the progress bar, the
+            streak - is dropped rather than truncated, because a clipped plan
             title tells you less than no plan title.
           */
           <div className="flex flex-col items-center gap-1 pt-3">

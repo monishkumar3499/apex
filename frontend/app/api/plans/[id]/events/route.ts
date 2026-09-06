@@ -10,7 +10,7 @@ type Params = { params: Promise<{ id: string }> };
  * Server-sent build progress.
  *
  * The build runs detached, so the client subscribes here and watches stages
- * land in real time — "Designing 48 topics", "31 verified resources
+ * land in real time - "Designing 48 topics", "31 verified resources
  * attached", "126 study days scheduled". A spinner with no narration for two
  * minutes is the fastest way to lose a new user.
  */

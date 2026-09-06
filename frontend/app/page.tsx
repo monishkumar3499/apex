@@ -15,7 +15,7 @@ const SURFACES = [
   {
     icon: CalendarDays,
     name: 'Today',
-    line: 'One screen that answers "what do I study right now" — with the resource already open.',
+    line: 'One screen that answers "what do I study right now" - with the resource already open.',
   },
   {
     icon: Layers,
@@ -25,7 +25,7 @@ const SURFACES = [
   {
     icon: Library,
     name: 'Library',
-    line: 'Real lectures, docs and papers — ranked by watch data, never invented by a model.',
+    line: 'Real lectures, docs and papers - ranked by watch data, never invented by a model.',
   },
   {
     icon: Brain,
@@ -90,7 +90,7 @@ const STEPS = [
  *
  * Two columns rather than the README's six-row table: on a phone a table of
  * that shape either scrolls sideways or collapses into unreadable stacks, and
- * the point being made is binary anyway — judgement goes to the model,
+ * the point being made is binary anyway - judgement goes to the model,
  * arithmetic goes to code.
  */
 const JUDGEMENT = [
@@ -109,14 +109,14 @@ const ARITHMETIC = [
  * What the replan pass actually guarantees.
  *
  * Every line here is a property of `replan()` in `backend/services/
- * plan-service.ts`, not a marketing claim — including the 25% overflow, which
+ * plan-service.ts`, not a marketing claim - including the 25% overflow, which
  * is the one design decision in it that a learner can feel.
  */
 const RESCHEDULE = [
   {
     icon: Lock,
     title: 'Your deadline does not move',
-    body: 'The exam is on the date the exam is on. Re-cutting the plan means fitting what is left into the days that are left — never quietly extending the finish line to make the arithmetic work.',
+    body: 'The exam is on the date the exam is on. Re-cutting the plan means fitting what is left into the days that are left - never quietly extending the finish line to make the arithmetic work.',
   },
   {
     icon: Gauge,
@@ -131,7 +131,7 @@ const RESCHEDULE = [
   {
     icon: Zap,
     title: 'It costs nothing and takes no thought',
-    body: 'No model call, no tokens, no waiting. It is arithmetic over rows you already have, so it runs in the time it takes to tap the button — and you can run it as often as life requires.',
+    body: 'No model call, no tokens, no waiting. It is arithmetic over rows you already have, so it runs in the time it takes to tap the button - and you can run it as often as life requires.',
   },
 ];
 
@@ -172,7 +172,7 @@ export default function LandingPage() {
               Three placements, because the hero has three layouts.
 
               Below `lg` the copy is a single full-width column, so there is
-              nowhere for the field to go that is not behind text — it is
+              nowhere for the field to go that is not behind text - it is
               pulled up above the headline and dimmed instead. The `sm`–`lg`
               band is dimmed hardest: that is where the paragraph and the CTA
               row are widest, and a node landing on "…and by when" reads as a
@@ -188,13 +188,13 @@ export default function LandingPage() {
 
           <div className="relative mx-auto w-full max-w-content">
             {/*
-              The preview leads on a phone — it is the clearest single
-              explanation of what the product is — and moves beside the copy
+              The preview leads on a phone - it is the clearest single
+              explanation of what the product is - and moves beside the copy
               once the viewport is wide enough to hold both.
 
               `minmax(0, …fr)` rather than a bare `…fr`: an `fr` track keeps an
               automatic min-content floor, so one long unbreakable string in the
-              headline would push the column — and the page — wider than the
+              headline would push the column - and the page - wider than the
               viewport.
             */}
             <div className="grid w-full min-w-0 grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:gap-14 xl:gap-20">
@@ -283,7 +283,7 @@ export default function LandingPage() {
             />
 
             {/*
-              The steps sit on the orbit rail — the same graphic the app uses on
+              The steps sit on the orbit rail - the same graphic the app uses on
               Today and on the build screen. A marketing page drawn from bespoke
               parts that resemble nothing in the product is how a landing page
               ends up over-promising.
@@ -412,7 +412,7 @@ export default function LandingPage() {
             <SectionHead
               eyebrow="The reschedule engine"
               title="Every plan survives contact with a bad week"
-              sub="This is the part that decides whether you are still using Kairo in month three. A study plan does not fail because the syllabus was wrong — it fails the first week you miss two days, open the app, and find a wall of overdue tasks with no way back in."
+              sub="This is the part that decides whether you are still using Kairo in month three. A study plan does not fail because the syllabus was wrong - it fails the first week you miss two days, open the app, and find a wall of overdue tasks with no way back in."
             />
 
             <div className="mt-12 grid grid-cols-1 items-start gap-8 sm:mt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
@@ -449,9 +449,9 @@ export default function LandingPage() {
                 </p>
                 <div className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-3">
                   {[
-                    ['A catch-up day every two weeks', 'Schedules no new material at all. It is not a rest day — it is the slack the plan needs to absorb a bad week without any intervention.'],
+                    ['A catch-up day every two weeks', 'Schedules no new material at all. It is not a rest day - it is the slack the plan needs to absorb a bad week without any intervention.'],
                     ['A reserved final block', 'The last stretch before your deadline is held for revision and can never be consumed by new topics, however far behind you get.'],
-                    ['Honest deferral, not compression', 'If the material genuinely cannot fit, the lowest-value topics are marked optional and shown to you — rather than everything being squeezed until none of it teaches anything.'],
+                    ['Honest deferral, not compression', 'If the material genuinely cannot fit, the lowest-value topics are marked optional and shown to you - rather than everything being squeezed until none of it teaches anything.'],
                   ].map(([title, body]) => (
                     <div key={title} className="flex gap-3">
                       <span
@@ -481,7 +481,7 @@ export default function LandingPage() {
             <SectionHead
               eyebrow="Why it holds up"
               title="The plan is computed, not improvised"
-              sub="These are properties of the algorithm, checked by the test suite — not hopes expressed in a prompt."
+              sub="These are properties of the algorithm, checked by the test suite - not hopes expressed in a prompt."
             />
 
             <div className="mt-12 grid grid-cols-1 gap-4 sm:mt-16 md:grid-cols-2 lg:gap-6">
@@ -652,7 +652,7 @@ function EngineColumn({
  *
  * Two stacks of days: three missed, then the same work redistributed across
  * what remains. It is drawn rather than described because the interesting part
- * is *shape* — the overdue block does not thin out across the whole remaining
+ * is *shape* - the overdue block does not thin out across the whole remaining
  * plan, it lands in the next few days and then the schedule returns to normal.
  *
  * Pure CSS bars rather than a chart library: there are fourteen rectangles
@@ -785,7 +785,7 @@ function DayStack({
 }
 
 /**
- * Static mock of the Today screen — the product's actual centre of gravity.
+ * Static mock of the Today screen - the product's actual centre of gravity.
  *
  * Drawn with the same orbit rail and the same glass the real screen uses, so
  * the thing a visitor sees on the marketing page is recognisably the thing they
@@ -797,7 +797,7 @@ function PrepMapPreview() {
     { kind: 'Learn', title: 'Setup & hold time violations', time: '55m', tone: 'accent', done: true },
     { kind: 'Practice', title: 'Timing problem set 3', time: '40m', tone: 'cyan', done: true },
     { kind: 'Review', title: 'Recall: Metastability', time: '15m', tone: 'cyan', done: false },
-    { kind: 'Learn', title: 'Clock domain crossing — part 1', time: '50m', tone: 'accent', done: false },
+    { kind: 'Learn', title: 'Clock domain crossing - part 1', time: '50m', tone: 'accent', done: false },
   ];
 
   return (
@@ -817,7 +817,7 @@ function PrepMapPreview() {
           system's normal transparency the field's rings and nodes read straight
           through it and land on top of the task titles. `bg-bg/70` occludes
           enough for text to hold its contrast while still letting the orbit
-          ghost through behind it — which is the effect worth having, rather
+          ghost through behind it - which is the effect worth having, rather
           than the one where you cannot tell the card from the background.
         */}
         <div aria-hidden className="absolute inset-0 rounded-shell bg-bg/70" />
@@ -826,7 +826,7 @@ function PrepMapPreview() {
           aria-hidden
           className="glass-raised relative w-full min-w-0 overflow-hidden rounded-shell shadow-e4"
         >
-          {/* Specular top edge — the single detail that reads as bevelled glass. */}
+          {/* Specular top edge - the single detail that reads as bevelled glass. */}
           <div className="holo-rule absolute inset-x-0 top-0" />
 
           <div className="flex items-center justify-between border-b border-glass-edge/[0.07] px-4 py-3.5 sm:px-5">

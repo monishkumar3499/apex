@@ -31,7 +31,7 @@ export function UserMenu({
    *
    * The browser client can only remove the cookies JavaScript can see, so a
    * client-only sign-out can leave the httpOnly refresh cookie in place and
-   * the server still considers the learner signed in — sign-out appears to do
+   * the server still considers the learner signed in - sign-out appears to do
    * nothing. The route handler does the authoritative clear; the local call
    * keeps the in-memory client consistent.
    */
@@ -40,7 +40,7 @@ export function UserMenu({
     try {
       await supabaseBrowser().auth.signOut({ scope: 'local' });
     } catch {
-      // Already gone locally — the server call below is what matters.
+      // Already gone locally - the server call below is what matters.
     }
     try {
       await fetch('/auth/signout', { method: 'POST', redirect: 'manual' });

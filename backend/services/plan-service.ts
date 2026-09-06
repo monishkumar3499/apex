@@ -23,11 +23,11 @@ import { logger } from '../logger/pino';
  *
  * Model calls, regardless of plan size:
  *   1. classify   nano tier, ~400 tokens
- *   2. blueprint  structured tier — an outline call plus 2-3 concurrent topic
+ *   2. blueprint  structured tier - an outline call plus 2-3 concurrent topic
  *                 calls (see blueprint-builder). Skipped on a cache hit.
  *
- * Everything else — resource discovery, scheduling, the digest, the welcome
- * message — is code, and costs nothing.
+ * Everything else - resource discovery, scheduling, the digest, the welcome
+ * message - is code, and costs nothing.
  *
  * The stages are ordered for wall-clock, not for readability: subject-level
  * resource discovery starts before the structure call, and curation runs
@@ -87,7 +87,7 @@ export async function classifyGoal(params: {
       ask: Array.isArray(result.ask) ? result.ask.filter((a) => a?.q && a.opts?.length >= 2).slice(0, 2) : [],
     };
   } catch (error) {
-    // Classification must never block plan creation — but a silent fallback
+    // Classification must never block plan creation - but a silent fallback
     // looks identical to a confident verdict, so mark it. buildPlan turns the
     // flag into a plan_event, and /api/health reports the underlying cause.
     const reason = error instanceof Error ? error.message : String(error);
@@ -117,8 +117,8 @@ export async function classifyGoal(params: {
  *
  * The divisor sets the average topic size, and that single number decides
  * whether the plan feels usable. At one topic per 2.5 hours the average entry
- * was a 150-minute block — three evenings of the same title, which reads to a
- * learner as a plan that has stalled and to the scheduler as "Topic 4 — part
+ * was a 150-minute block - three evenings of the same title, which reads to a
+ * learner as a plan that has stalled and to the scheduler as "Topic 4 - part
  * 3". At 1.75 the average lands near 105 minutes and, with the prompt's
  * 120-minute ceiling, most topics come out at one or two sittings: small
  * enough to finish, which is what keeps someone returning.
@@ -219,7 +219,7 @@ export async function buildPlan(planId: string): Promise<void> {
     // A degraded intake means the goal was never actually classified, so the
     // prep type and scope below are defaults. Record it against the build.
     if (intake.degraded) {
-      await event(planId, userId, 'classify', 'warn', 'Goal was not classified — using a generic skill plan', {
+      await event(planId, userId, 'classify', 'warn', 'Goal was not classified - using a generic skill plan', {
         reason: intake.degradedReason ?? 'unknown',
       });
     }
@@ -287,7 +287,7 @@ export async function buildPlan(planId: string): Promise<void> {
 
       blueprint = generation.blueprint;
 
-      // A partially degraded structure is still cacheable — but say so, rather
+      // A partially degraded structure is still cacheable - but say so, rather
       // than letting the next learner inherit a gap silently.
       if (generation.degradedUnits.length) {
         await event(
@@ -341,7 +341,7 @@ export async function buildPlan(planId: string): Promise<void> {
     // ---- Stage 3 · resource curation (no model involved) ----------------
     //
     // Started *before* the inserts, because curation depends only on the
-    // blueprint — titles, keywords and unit membership — and not on a single
+    // blueprint - titles, keywords and unit membership - and not on a single
     // database id. It used to run after two sequential round trips that it had
     // no need to wait for.
     await event(planId, userId, 'resources', 'running', 'Finding and ranking real study material');
@@ -352,7 +352,7 @@ export async function buildPlan(planId: string): Promise<void> {
       discovery,
       // Budgets follow plan size. Fixed ones meant a ten-unit plan got searches
       // for seven of its units and a gap pass for eight of its sixty-five
-      // topics — measured coverage was 28/65. YouTube search.list costs 100
+      // topics - measured coverage was 28/65. YouTube search.list costs 100
       // quota units of a 10,000/day allowance, so this stays inside roughly
       // 2,500 units for the largest plans.
       videoSearchBudget: Math.min(14, units.length + 2),
@@ -534,7 +534,7 @@ export async function buildPlan(planId: string): Promise<void> {
       }).filter((r) => r.session_id),
     );
 
-    // Chunked insert — a year-long plan can exceed 2,000 rows.
+    // Chunked insert - a year-long plan can exceed 2,000 rows.
     //
     // The chunks go out together rather than one after another. They are
     // independent inserts into the same table, so serialising them made a
@@ -560,7 +560,7 @@ export async function buildPlan(planId: string): Promise<void> {
       ...itemChunks.map((chunk) => db.from('session_items').insert(chunk)),
       ...(mockRows.length ? [db.from('mocks').insert(mockRows)] : []),
     ]);
-    // A failed chunk must still fail the build — a plan missing a quarter of
+    // A failed chunk must still fail the build - a plan missing a quarter of
     // its days is worse than a plan that reports it could not be built.
     writes.forEach((result, i) => must({ data: result.data ?? [], error: result.error }, `insertItems[${i}]`));
 
@@ -640,7 +640,7 @@ export async function buildPlan(planId: string): Promise<void> {
  * Redistribute everything still pending from today onward.
  *
  * Called when a learner falls behind. Overdue work is not dropped and the
- * target date is not moved — the remaining items are re-laid across the days
+ * target date is not moved - the remaining items are re-laid across the days
  * that actually remain, respecting the same daily capacity. Zero tokens.
  */
 export async function replan(planId: string, userId: string): Promise<{ moved: number; days: number }> {

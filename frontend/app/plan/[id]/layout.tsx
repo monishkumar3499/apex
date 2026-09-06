@@ -23,7 +23,7 @@ export default async function PlanLayout({ children, params }: Props) {
 
   if (!plan) notFound();
 
-  // The build view owns the whole screen — no sidebar to navigate to yet.
+  // The build view owns the whole screen - no sidebar to navigate to yet.
   if (plan.status === 'building' || plan.status === 'failed') {
     return <>{children}</>;
   }
@@ -68,7 +68,7 @@ export default async function PlanLayout({ children, params }: Props) {
       />
 
       {/* Padded by the same variable the rail is sized by, so collapsing it
-          widens the content in the same frame — and a server component can
+          widens the content in the same frame - and a server component can
           follow client-side rail state without knowing it exists. */}
       <div className="w-full min-w-0 flex-1 transition-[padding] duration-300 ease-out md:pl-[var(--rail-w)]">
         {/*
@@ -78,7 +78,7 @@ export default async function PlanLayout({ children, params }: Props) {
 
           The column grows past 4xl on large monitors. Holding every workspace
           screen at 56rem left a 34" display two-thirds empty, but an uncapped
-          column runs the map's topic rows out to 150 characters — so it steps
+          column runs the map's topic rows out to 150 characters - so it steps
           once and stops.
         */}
         <main

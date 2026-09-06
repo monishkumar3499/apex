@@ -10,12 +10,12 @@
  * Eight vendors, each with its own quota, its own outage schedule and its own
  * definition of "too many requests". Seven of them speak the OpenAI chat
  * completions dialect, so they cost one config entry each rather than one
- * client each — see `oai.ts`. Gemini speaks its own, so it keeps `gemini.ts`.
+ * client each - see `oai.ts`. Gemini speaks its own, so it keeps `gemini.ts`.
  *
  * Every provider is optional. A missing key removes that provider's models
  * from every fallback chain rather than turning them into failed attempts, so
  * running with only `GEMINI_API_KEY` set behaves exactly as it did before this
- * file existed — just with fewer buckets to draw from.
+ * file existed - just with fewer buckets to draw from.
  */
 
 export type ProviderId =
@@ -39,7 +39,7 @@ export interface ProviderSpec {
   dialect: 'oai' | 'gemini';
   /**
    * Env var holding the key. A **comma-separated list is accepted** and each
-   * entry becomes an independently rate-limited identity — see `keyring.ts`.
+   * entry becomes an independently rate-limited identity - see `keyring.ts`.
    * Two free keys are two free quotas.
    */
   keyEnv: string;
@@ -81,7 +81,7 @@ const env = (name: string): string | undefined => {
  * Groq and Cerebras lead because their free tiers are measured in thousands of
  * requests per day and single-digit-hundred-millisecond first tokens. An
  * OpenRouter `:free` slug, by contrast, is capped at 50 requests/day on an
- * account holding under 10 credits — which is a fifth of what one learner
+ * account holding under 10 credits - which is a fifth of what one learner
  * needs, let alone twenty. OpenRouter stays in the chains as breadth, not as a
  * primary.
  */
@@ -162,7 +162,7 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     concurrency: 2,
     jsonMode: true,
     signup: 'https://github.com/settings/personal-access-tokens (scope: models:read)',
-    note: 'Free with a GitHub PAT — no billing relationship required at all.',
+    note: 'Free with a GitHub PAT - no billing relationship required at all.',
   },
 
   cloudflare: {
@@ -212,7 +212,7 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
       'X-Title': env('SITE_NAME') ?? 'Kairo',
     }),
     signup: 'https://openrouter.ai/keys',
-    note: 'Free slugs are capped at 50 requests/day under 10 credits — breadth, not a primary.',
+    note: 'Free slugs are capped at 50 requests/day under 10 credits - breadth, not a primary.',
   },
 };
 
@@ -262,7 +262,7 @@ export const configuredProviders = (): ProviderId[] => PROVIDER_IDS.filter(isCon
  *
  *   1. An explicit `provider:model` prefix (`groq:llama-3.3-70b-versatile`).
  *      Unambiguous, and the only way to express that two vendors serve the
- *      same slug — which they routinely do, since half of these providers host
+ *      same slug - which they routinely do, since half of these providers host
  *      the same Llama weights.
  *   2. This table, for the bare slugs used in the built-in chains.
  *   3. Shape heuristics, so slugs written before this registry existed

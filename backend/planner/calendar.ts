@@ -14,7 +14,7 @@ export interface CalendarDay {
   date: string;
   capacity: number;
   isWeekend: boolean;
-  /** Consolidation days carry no new material — they absorb slippage. */
+  /** Consolidation days carry no new material - they absorb slippage. */
   isCatchUp: boolean;
   /** Reserved end-of-plan revision block. */
   isFinalStretch: boolean;
@@ -42,7 +42,7 @@ export interface CalendarOptions {
  *   2. a reserved final-revision block that is never consumed by new topics.
  *
  * A day whose configured capacity is zero is not a study day at all. That is
- * what lets a learner set weekdays *or* weekends to zero — see
+ * what lets a learner set weekdays *or* weekends to zero - see
  * `capacity.ts` for the rule that decides whether what remains is enough.
  */
 export function buildCalendar(options: CalendarOptions): CalendarDay[] {
@@ -73,7 +73,7 @@ export function buildCalendar(options: CalendarOptions): CalendarDay[] {
       Zero means "not a study day", exactly like a rest day.
 
       This used to read `Math.max(15, configured)`, which silently turned "I do
-      not study on weekdays" into "I study 15 minutes every weekday" — so a
+      not study on weekdays" into "I study 15 minutes every weekday" - so a
       weekend-only learner got a plan built almost entirely out of days they had
       told us they were unavailable. The floor still applies to days that *do*
       have time, because a 1-14 minute session cannot hold anything.

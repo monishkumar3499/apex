@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
  *
  * Replaces two separately hand-rolled dropdowns that between them had no
  * roving focus, no typeahead, no collision detection against the viewport
- * edge, and closed on `mousedown` — which a touch device does not always fire.
+ * edge, and closed on `mousedown` - which a touch device does not always fire.
  * Radix handles all four, and returns focus to the trigger on close.
  */
 const DropdownMenu = DropdownMenuPrimitive.Root;

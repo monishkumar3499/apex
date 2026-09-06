@@ -16,7 +16,7 @@ const clean = (val?: string) => val?.replace(/^["']|["']$/g, '').trim();
  * Captured at module scope so the compiler inlines them exactly as it does for
  * the browser bundle. Reading process.env inside the handler would instead be
  * a runtime lookup, and would report `true` even when the client build got
- * nothing — which is the exact failure this is here to catch.
+ * nothing - which is the exact failure this is here to catch.
  */
 const BUNDLED_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const BUNDLED_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -41,7 +41,7 @@ interface Probe {
  * Provider-agnostic: the registry knows every endpoint and auth shape, so a
  * new vendor becomes probeable without touching this file. Providers retire
  * slugs without notice, and a chain full of dead slugs turns one failure into
- * ten — so this is the check to run after any model change.
+ * ten - so this is the check to run after any model change.
  */
 async function probe(ref: string, tier?: Tier): Promise<Probe> {
   const { provider, model } = resolveModel(ref, tier === 'structured' ? 'gemini' : 'openrouter');
@@ -97,7 +97,7 @@ async function probe(ref: string, tier?: Tier): Promise<Probe> {
       tier,
       model: ref,
       provider,
-      // A 429 means the slug is alive and the key is valid — it is the quota
+      // A 429 means the slug is alive and the key is valid - it is the quota
       // that is busy. That is a working configuration, not a broken one.
       ok: response.status === 429,
       status: response.status,
@@ -132,7 +132,7 @@ export async function GET(request: Request) {
   const ai = providerHealth();
 
   // Any one provider is enough to run. Which one is a capacity question, not a
-  // liveness one — and it is answered by `ai.buckets` below.
+  // liveness one - and it is answered by `ai.buckets` below.
   if (ai.buckets === 0) {
     missing.push(`an AI provider key (any of: ${ai.missing.map((m) => m.env).join(', ')})`);
   }
@@ -150,7 +150,7 @@ export async function GET(request: Request) {
    */
   if (ai.buckets > 0 && ai.buckets < 3) {
     degraded.push(
-      `only ${ai.buckets} AI quota bucket${ai.buckets === 1 ? '' : 's'} — ` +
+      `only ${ai.buckets} AI quota bucket${ai.buckets === 1 ? '' : 's'} - ` +
         `add another provider key, or a second comma-separated key on an existing one`,
     );
   }
@@ -210,7 +210,7 @@ export async function GET(request: Request) {
    * A tier is broken only when *every* model in it is unreachable.
    *
    * With ten models across five vendors in a chain, one retired slug is not an
-   * outage — reporting it as one would make a healthy deploy look failed. What
+   * outage - reporting it as one would make a healthy deploy look failed. What
    * matters is whether a tier has anything left to call.
    */
   const brokenTiers = checkAll

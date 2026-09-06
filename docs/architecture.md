@@ -29,7 +29,7 @@ Client  ──GET  /api/plans/[id]/events──►│  SSE: stage-by-stage narra
 ```
 
 Measured on a 26-week GATE plan (12 units, 80 topics): the structure stage takes
-**25.9s** sharded, against **33.0s** for the same content in one response — and
+**25.9s** sharded, against **33.0s** for the same content in one response - and
 the sharded run produced 23% more topics. Sharding costs prompt tokens (each
 shard re-sends the unit list) and buys wall-clock, which is the trade worth
 making: output tokens are emitted serially, prompt tokens are not.
@@ -42,7 +42,7 @@ computed. That boundary is the whole design.
 The model never sees or emits a URL. It emits a natural-language **search
 intent** per unit ("network theory nodal mesh analysis lecture"); the curation
 pipeline runs that against real APIs and binds results to topics with text
-similarity. A hallucinated link is therefore not merely unlikely — it is not
+similarity. A hallucinated link is therefore not merely unlikely - it is not
 representable.
 
 Likewise the model never emits a date or a day number. It emits topics with time
@@ -54,51 +54,51 @@ capacity. This is why plan quality does not degrade as the timeline grows: a
 
 ### `backend/ai`
 
-`gemini.ts` — native Gemini client with JSON mode (`responseMimeType`), a
+`gemini.ts` - native Gemini client with JSON mode (`responseMimeType`), a
 streaming generator, and `thinkingConfig.thinkingBudget: 0` on structured work.
 That last one matters: filling in a schema is not reasoning, and thinking costs
 about a third of the latency of a small JSON call for nothing. A slug that
 rejects the field gets one retry without it.
 
-`providers.ts` — the registry: eight vendors, their endpoints, auth shapes and
+`providers.ts` - the registry: eight vendors, their endpoints, auth shapes and
 published free-tier limits. **Quota on a free tier is metered per key, per
 vendor**, so no amount of retrying makes an exhausted bucket bigger; the only
 real defence is to hold several independent buckets. Every provider is optional
 and a missing key removes its models from every chain rather than turning them
 into failed attempts.
 
-`oai.ts` — one client for all seven OpenAI-compatible providers (Groq, Cerebras,
+`oai.ts` - one client for all seven OpenAI-compatible providers (Groq, Cerebras,
 Mistral, Cloudflare Workers AI, Together, GitHub Models, OpenRouter). The
-awkward parts of that dialect are vendor-independent — the reasoning-token
+awkward parts of that dialect are vendor-independent - the reasoning-token
 budget trap, providers that echo their reasoning trace into `content`
 (`nvidia/nemotron-3.5-lightning:free` opens with "Here's a thinking process:"),
 `finish_reason: "length"` on a budget the thinking pass ate, failures tunnelled
-inside a 200 — so they are handled once here rather than seven times.
+inside a 200 - so they are handled once here rather than seven times.
 
-`keyring.ts` — key rotation. Every provider's env var accepts a
+`keyring.ts` - key rotation. Every provider's env var accepts a
 **comma-separated list**, and each entry is an independently metered identity:
 `GROQ_API_KEY="a,b,c"` is genuinely three times the allowance, because the
 upstream has no idea the three keys belong to one deployment. Each key gets its
-own bucket, and a key that 429s is penalised alone — implicating its siblings is
+own bucket, and a key that 429s is penalised alone - implicating its siblings is
 how a multi-key setup ends up no faster than a single-key one.
 
-`provider-error.ts` — one error type carrying HTTP status and the upstream's
+`provider-error.ts` - one error type carrying HTTP status and the upstream's
 `Retry-After`, so the router can tell "busy, try again" from "this slug is
 retired" instead of parsing message strings.
 
-`resilience.ts` — four mechanisms that stop the pipeline rate-limiting itself:
+`resilience.ts` - four mechanisms that stop the pipeline rate-limiting itself:
 
 - **`TokenBucket`** decides whether a request may leave at all, and **re-learns
   the real ceiling** from the 429s the upstream sends back. A published limit is
   a claim; the observed limit is a fact, and free tiers routinely enforce
   something tighter than they document. It halves its rate on every 429 and
-  edges back up after 45s of calm — fast to cut, slow to recover, because
+  edges back up after 45s of calm - fast to cut, slow to recover, because
   guessing too high poisons the retries landing inside the penalty window while
   guessing too low only costs latency. It also counts *daily* spend, since a
   per-minute bucket alone will happily burn a day's allowance inside an hour.
 - **`ProviderGate`** caps how fast requests leave and how many run at once.
-  Builds burst naturally — every unit search at once, three blueprint shards at
-  once — and a burst is precisely what trips a per-minute limit. Start times are
+  Builds burst naturally - every unit search at once, three blueprint shards at
+  once - and a burst is precisely what trips a per-minute limit. Start times are
   reserved synchronously, because computing a delay and *then* recording it lets
   every concurrent caller read the same value and fire together.
 - **`FairQueue`** decides *whose* request leaves next: round-robin over
@@ -111,7 +111,7 @@ retired" instead of parsing message strings.
   not retried; without this a ten-model chain still spends its whole budget on
   the first model.
 
-`model-router.ts` — tiers by job size, and an 8–10 model **cross-vendor fallback
+`model-router.ts` - tiers by job size, and an 8–10 model **cross-vendor fallback
 chain** per tier. Crossing vendors is the point: free tiers do not fail one
 model at a time, so a chain of three Gemini slugs is a chain of one. Chains are
 ordered by *cheapest bucket to refill*, which is why the volume tiers lead on
@@ -127,14 +127,14 @@ less-preferred model on an idle vendor beat a perfect model on a busy one.
 
 `model-router.ts` also holds the `TokenLedger`, so a build's cost is measured
 rather than estimated, and `providerHealth()`, which answers "why is this build
-slow" in one request — bucket count, per-key headroom, queued learners, and
+slow" in one request - bucket count, per-key headroom, queued learners, and
 which models are cooling down.
 
-`json.ts` — progressive JSON repair (fences, smart quotes, trailing commas,
+`json.ts` - progressive JSON repair (fences, smart quotes, trailing commas,
 truncation), with the repair pass pinned to the tier that produced the output.
 
 ### `backend/curation`
-Two-pass. Pass one searches once per unit — topics in a unit share vocabulary,
+Two-pass. Pass one searches once per unit - topics in a unit share vocabulary,
 so one search covers several of them at a twelfth of the quota cost. Pass two
 targets only the topics pass one left uncovered.
 
@@ -143,8 +143,8 @@ fit (peaking at 12–75 minutes, one study block), recency decay with a six-year
 half-life, and domain authority for web results.
 
 Two penalties matter:
-- **Reuse** — stops one popular video being pinned to every topic.
-- **Breadth** — a syllabus PDF matches every topic's keywords because it *is*
+- **Reuse** - stops one popular video being pinned to every topic.
+- **Breadth** - a syllabus PDF matches every topic's keywords because it *is*
   the syllabus. Breadth is therefore a penalty, and a resource matching most of
   the plan is treated as covering nothing specifically.
 
@@ -158,15 +158,15 @@ that schedules no new material, and a final revision block never consumed by new
 topics.
 
 `scheduler.ts` is the core. Topological ordering, capacity-bounded placement,
-expanding-interval review, unit checkpoints, spread mocks, and — when demand
-exceeds capacity — deferral of low-value leaf topics before compression, so the
+expanding-interval review, unit checkpoints, spread mocks, and - when demand
+exceeds capacity - deferral of low-value leaf topics before compression, so the
 surviving material still gets enough time to be learned.
 
 Three of its rules exist for the learner rather than for the arithmetic:
 
 - **Block length scales with difficulty.** A flat 90-minute ceiling treats "list
   the SI units" and "derive the small-signal model" as the same kind of work.
-  Difficulty 5 caps at 40 minutes — the same total time, delivered as more,
+  Difficulty 5 caps at 40 minutes - the same total time, delivered as more,
   shorter blocks, which is what a learner actually completes.
 - **At most three new topics open per day.** Interleaving helps retention, but a
   free Saturday with four hours of capacity would otherwise start five unrelated
@@ -186,7 +186,7 @@ comes last.
 
 The blueprint prompt is written against learner psychology rather than against
 subject taxonomy, because the failure mode of a curriculum model is not
-inaccuracy — it is producing a syllabus that is *correct and unusable*. Left
+inaccuracy - it is producing a syllabus that is *correct and unusable*. Left
 alone it emits "Advanced Transform-Domain Techniques and Their Applications",
 estimates four hours of first-pass study, and fuses three ideas into one entry.
 
@@ -196,7 +196,7 @@ sittings; the first topics of unit 1 pinned to difficulty 1–2, because
 self-efficacy predicts persistence better than motivation does; difficulty
 ramping inside each unit; and titles a learner recognises *before* studying.
 
-The minute bound is enforced in code as well as asked for in the prompt — a
+The minute bound is enforced in code as well as asked for in the prompt - a
 prompt constraint is a request, and `m: 300` reaches the learner as five
 consecutive blocks carrying the same title.
 
@@ -216,8 +216,8 @@ the ceiling: free Gemini allows roughly ten requests a minute, so one call per
 unit would rate-limit a ten-unit plan reliably.
 
 Merging is the subtle part, and is unit-tested directly. Shards number `dep`
-against their own output — they cannot know the global ordinal of a topic another
-shard has not written yet — so ordinals are rebased on merge. Getting that wrong
+against their own output - they cannot know the global ordinal of a topic another
+shard has not written yet - so ordinals are rebased on merge. Getting that wrong
 does not fail; it quietly reorders the syllabus, because the scheduler sorts
 topologically.
 
@@ -225,8 +225,8 @@ topologically.
 chosen for wall-clock, not readability: subject-level resource discovery starts
 *before* the structure call, and curation runs alongside the database writes,
 because neither depends on the other. `coach-service.ts`
-assembles chat context from three cheap sources — a precomputed digest, today's
-items, and the three topics whose keywords best match the question — instead of
+assembles chat context from three cheap sources - a precomputed digest, today's
+items, and the three topics whose keywords best match the question - instead of
 one expensive one. `practice-service.ts` generates drill questions lazily per
 topic and caches them forever. `progress-service.ts` derives every figure from
 logged completions, never from planned minutes.
@@ -249,16 +249,16 @@ ownership on those paths is enforced in the route handler.
 
 One landing point, `/auth/callback`, handles all three shapes that arrive there,
 because which one you get depends on the provider and on Supabase project
-settings rather than on anything this app controls: `?code=` (PKCE — Google, and
+settings rather than on anything this app controls: `?code=` (PKCE - Google, and
 magic links on a PKCE project), `?token_hash=&type=` (the newer email shape), and
 `?error=` (the provider refused, or the learner cancelled). The third is a normal
-outcome, not an exception, and it has to be *shown* — a failure the login page
+outcome, not an exception, and it has to be *shown* - a failure the login page
 silently swallows is indistinguishable from sign-in being broken.
 
 Two rules the flow depends on:
 
 - **Redirects are built from the origin the browser used**, resolved from
-  `APP_ORIGIN` or the forwarded headers — never from `request.url`. Behind a
+  `APP_ORIGIN` or the forwarded headers - never from `request.url`. Behind a
   proxy those differ, and the difference is an HTTPS session downgraded to HTTP,
   whose `Secure` auth cookie is then dropped: a sign-in that loops back to the
   login page with nothing in the logs.
@@ -266,7 +266,7 @@ Two rules the flow depends on:
   `//evil.example` is a protocol-relative URL a browser follows off-site.
 
 Middleware gates the app routes and returns **401 JSON for `/api/*`** rather than
-a 307 to a page of HTML — `fetch(...).json()` on a login page is the
+a 307 to a page of HTML - `fetch(...).json()` on a login page is the
 "Unexpected token <" that makes an expired session look like a broken feature.
 
 The one failure no runtime check can catch: `NEXT_PUBLIC_*` are compiled into the
@@ -280,7 +280,7 @@ takes them as build args and refuses to build without them, and
 - Classification failing degrades to a `skill` blueprint rather than blocking
   plan creation.
 - A model that is rate-limited or retired is skipped for a cooldown and the tier
-  falls through to the next model in its chain — crossing providers, so a
+  falls through to the next model in its chain - crossing providers, so a
   vendor-wide outage is survivable. Every fallback is recorded against the build.
 - A blueprint shard failing costs its units' topics, not the plan. Losing the
   outline, or most of the shards, falls back to the original single call.
@@ -289,5 +289,5 @@ takes them as build args and refuses to build without them, and
 - A build crash sets `status = 'failed'` with the message, and the build view
   offers a retry that first clears partial rows so a retry cannot duplicate.
 - A coach stream that dies mid-reply persists what arrived and says so. It falls
-  back to another model only if the stream never opened — switching mid-reply
+  back to another model only if the stream never opened - switching mid-reply
   would splice two voices into one answer.

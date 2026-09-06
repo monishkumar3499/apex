@@ -4,11 +4,11 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * The orbit rail — Kairo's signature graphic.
+ * The orbit rail - Kairo's signature graphic.
  *
  * The product's whole claim is that it turns a goal into an *ordered route
  * through time*. The spine is that claim drawn: a continuous vertical rail
- * with a node per step, used on every surface that shows sequence — today's
+ * with a node per step, used on every surface that shows sequence - today's
  * items, the build stages, the intake steps, the landing hero.
  *
  * Two implementation notes that decide whether it reads as deliberate:
@@ -34,7 +34,7 @@ export function Spine({
   className?: string;
   /** Distance from the left edge to the rail's centre. */
   x?: string;
-  /** Runs a highlight down the rail — for work actively in progress. */
+  /** Runs a highlight down the rail - for work actively in progress. */
   live?: boolean;
   /** Top/bottom inset, so the rail starts and ends at the first/last node. */
   inset?: { top?: string; bottom?: string };
@@ -88,7 +88,7 @@ export function SpineNode({
         /*
           `accent-vivid`, not `accent`. This node is a filled disc with no text
           in it, so it is held to the 3:1 graphics threshold rather than the
-          4.5:1 text one — which is the whole reason the vivid token exists. In
+          4.5:1 text one - which is the whole reason the vivid token exists. In
           light mode the AA-safe `accent` renders as a muddy brown here, and
           the brightest element on the screen should not be the dullest colour
           in the palette.

@@ -7,7 +7,7 @@ import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
- * Edge-anchored panel — the mobile navigation drawer, and any filter surface
+ * Edge-anchored panel - the mobile navigation drawer, and any filter surface
  * that wants the whole side of the screen on a phone.
  *
  * Built on Radix Dialog rather than a positioned div so it gets the same focus

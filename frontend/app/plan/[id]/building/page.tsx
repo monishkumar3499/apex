@@ -63,7 +63,7 @@ export default function BuildingPage() {
         // Small beat so the last stage visibly lands before navigating.
         setTimeout(() => router.replace(`/plan/${planId}/today`), 700);
       } else if (data.status === 'timeout') {
-        setFailed('The build is taking longer than expected. It may still finish — reload to check.');
+        setFailed('The build is taking longer than expected. It may still finish - reload to check.');
       } else {
         setFailed(data.error ?? 'The build stopped unexpectedly.');
       }
@@ -146,7 +146,7 @@ export default function BuildingPage() {
       {/*
         The one screen where the full canvas orbit is unambiguously the right
         call: the learner is waiting, so an animation is not competing with
-        anything they are trying to read — it *is* the content. It also says
+        anything they are trying to read - it *is* the content. It also says
         the true thing about what is happening, which is that a system of
         topics is being assembled around a goal.
       */}
@@ -167,7 +167,7 @@ export default function BuildingPage() {
             Building your prep map
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-            Usually under a minute. You can close this tab — it keeps building.
+            Usually under a minute. You can close this tab - it keeps building.
           </p>
         </div>
 
@@ -186,7 +186,7 @@ export default function BuildingPage() {
           <div className="holo-rule absolute inset-x-0 top-0" />
           {/*
             The same spine that carries the day on Today, carrying the build
-            here — with a highlight travelling down the rail while work is
+            here - with a highlight travelling down the rail while work is
             still in flight, so a stage that takes twenty seconds still looks
             like something is happening.
           */}
@@ -257,7 +257,7 @@ export default function BuildingPage() {
         <p className="mt-4 flex items-start justify-center gap-1.5 px-2 text-center text-2xs leading-relaxed text-ink-faint">
           <ShieldCheck className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>
-            Every resource comes from a live API and is ranked on real watch data — no link in your
+            Every resource comes from a live API and is ranked on real watch data - no link in your
             plan was written by a model.
           </span>
         </p>

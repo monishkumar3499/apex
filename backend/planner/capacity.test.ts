@@ -37,7 +37,7 @@ describe('minimumMinutes', () => {
   });
 
   it('is bound by the syllabus on a short plan', () => {
-    // Four weeks of weekly-contact floor is 120 minutes — far below the
+    // Four weeks of weekly-contact floor is 120 minutes - far below the
     // syllabus requirement, so the syllabus is what binds.
     const short = minimumMinutes({ prepType: 'exam', level: 'beginner', weeks: 4 });
     expect(short).toBeGreaterThan(4 * 30);
@@ -46,7 +46,7 @@ describe('minimumMinutes', () => {
 
   it('is bound by weekly contact on a long plan', () => {
     // A year at 30 min/week exceeds the syllabus floor, so the total has to
-    // grow with the timeline — otherwise a 52-week plan could be "valid" with
+    // grow with the timeline - otherwise a 52-week plan could be "valid" with
     // the same hours as a 4-week one and never meet a review on its due date.
     const year = minimumMinutes({ prepType: 'skill', level: 'advanced', weeks: 52 });
     expect(year).toBe(52 * 30);
@@ -136,7 +136,7 @@ describe('checkCapacity', () => {
   });
 
   it('rejects a plan whose only sessions are too short to hold a topic', () => {
-    // 20 minutes a day for six months is ~60 hours — over the total floor, and
+    // 20 minutes a day for six months is ~60 hours - over the total floor, and
     // still useless, because no single session can contain a 45-minute topic.
     const verdict = checkCapacity({ ...sixMonths, weekdayMinutes: 20, weekendMinutes: 20 });
     expect(verdict.ok).toBe(false);

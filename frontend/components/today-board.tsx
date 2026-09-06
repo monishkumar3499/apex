@@ -215,7 +215,7 @@ export function TodayBoard({
             {local.length > 0 && (
               /*
                 The day's read at a glance. On a phone this is a full-width row
-                under the title — a 2x2 stat block there would push the first
+                under the title - a 2x2 stat block there would push the first
                 task below the fold, which is the one thing this screen exists
                 to show.
               */
@@ -296,7 +296,7 @@ export function TodayBoard({
             title={isToday ? 'Nothing scheduled today' : 'No upcoming session'}
             description={
               isToday
-                ? 'This is a scheduled rest day. Rest is part of the plan — or get ahead with a drill session.'
+                ? 'This is a scheduled rest day. Rest is part of the plan - or get ahead with a drill session.'
                 : 'Your plan has no further sessions scheduled.'
             }
             action={
@@ -313,7 +313,7 @@ export function TodayBoard({
             The spine.
             A continuous rail with one node per item, so the day reads as an
             ordered route rather than as a pile of cards. The node is also the
-            completion control — the thing you look at to see where you are is
+            completion control - the thing you look at to see where you are is
             the thing you press to move on.
           */
           <Spine x={SPINE_X} inset={{ top: '1.5rem', bottom: '1.5rem' }}>
@@ -347,7 +347,7 @@ export function TodayBoard({
             className="glass relative overflow-hidden rounded-panel border-success/25 bg-gradient-to-b from-success/[0.1] to-transparent p-6 text-center shadow-[0_0_0_1px_rgb(var(--success)/0.2),0_18px_50px_-20px_rgb(var(--success)/0.4)] sm:p-8"
           >
             {/* Finishing the day is the one moment worth celebrating on this
-                screen, so it gets its own orbit — the plan turning over. */}
+                screen, so it gets its own orbit - the plan turning over. */}
             <div
               aria-hidden
               className="pointer-events-none absolute left-1/2 top-1/2 aspect-square w-[130%] -translate-x-1/2 -translate-y-1/2 opacity-25"
@@ -418,7 +418,7 @@ function ItemRow({
    * The topic's other material, minus whatever is already shown above it.
    *
    * A video is hoisted to the front. On a `learn` item the primary resource is
-   * whichever scored highest overall, which is frequently a doc — and "watch
+   * whichever scored highest overall, which is frequently a doc - and "watch
    * this" is the affordance most learners reach for first, so it should not be
    * the third thing in the list.
    */
@@ -482,7 +482,7 @@ function ItemRow({
           'min-w-0 flex-1 overflow-hidden rounded-card transition-[border-color,box-shadow,opacity] duration-300',
           // Depth encodes state. The open item is nearest the viewer and lit;
           // a finished one recedes. That is the whole reason the glass system
-          // exists — the learner should be able to find their place on this
+          // exists - the learner should be able to find their place on this
           // screen without reading a word of it.
           isDone
             ? 'glass border-line/50 opacity-65'

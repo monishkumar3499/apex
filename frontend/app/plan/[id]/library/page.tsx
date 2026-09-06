@@ -61,7 +61,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   }));
 
   /*
-    Every topic in the plan, in syllabus order — including ones with nothing
+    Every topic in the plan, in syllabus order - including ones with nothing
     attached, so the filter row is a map of the syllabus rather than a map of
     whatever curation happened to find.
   */

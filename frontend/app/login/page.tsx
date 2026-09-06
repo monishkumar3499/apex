@@ -10,7 +10,7 @@ import { LoginForm } from './login-form';
  * The client version used `useSearchParams`, which opts its subtree out of
  * prerendering: the form had to sit behind a Suspense boundary and the page
  * shipped an empty panel that only filled in after hydration. Worse, an error
- * redirected here from `/auth/callback` was invisible for that whole window —
+ * redirected here from `/auth/callback` was invisible for that whole window -
  * so a failed sign-in looked like a dead button.
  */
 export const dynamic = 'force-dynamic';

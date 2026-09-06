@@ -18,8 +18,8 @@ RUN cd frontend && npm ci
 # Stage 2: build
 #
 # NEXT_PUBLIC_* variables are inlined into the client bundle by the compiler at
-# BUILD time. Supplying them only via `docker run --env-file` is too late —
-# there is nothing left to substitute — so the browser bundle ships
+# BUILD time. Supplying them only via `docker run --env-file` is too late -
+# there is nothing left to substitute - so the browser bundle ships
 # `undefined` for the Supabase URL and anon key. Every server route keeps
 # working (those read process.env at runtime), which makes the config look
 # fine while "Continue with Google" silently does nothing.

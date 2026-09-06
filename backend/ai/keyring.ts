@@ -7,7 +7,7 @@ import { TokenBucket, sleep } from './resilience';
  *
  * Free quota is metered **per API key**. The upstream has no idea that three
  * keys belong to one deployment, so `GROQ_API_KEY="gsk_a,gsk_b,gsk_c"` is
- * genuinely three times the allowance — the cheapest capacity increase
+ * genuinely three times the allowance - the cheapest capacity increase
  * available to this project, and a config change rather than a code change.
  *
  * Each key therefore gets its own adaptive bucket. Requests go to whichever key
@@ -77,7 +77,7 @@ class ProviderKeyring {
   }
 
   /**
-   * Shortest wait across every key — how long before this provider can serve
+   * Shortest wait across every key - how long before this provider can serve
    * anything at all.
    *
    * The router uses this to order a fallback chain, so a provider whose whole
@@ -95,7 +95,7 @@ class ProviderKeyring {
    *
    * Ties are broken round-robin. Always picking the first ready key would send
    * every request to key #0 whenever the keyring is idle, which is most of the
-   * time — so the second and third keys would sit unused until the first was
+   * time - so the second and third keys would sit unused until the first was
    * already in trouble.
    */
   async acquire(maxWaitMs: number): Promise<{ key: string; index: number } | null> {
@@ -120,7 +120,7 @@ class ProviderKeyring {
     if (!soonest || soonest.wait > maxWaitMs) return null;
 
     // Nothing is free but something will be soon enough to be worth waiting
-    // for. Waiting here — before the request is built — is strictly better than
+    // for. Waiting here - before the request is built - is strictly better than
     // firing it and being told to wait by a 429, which costs a round trip and,
     // on several of these providers, extends the penalty window.
     await sleep(soonest.wait);

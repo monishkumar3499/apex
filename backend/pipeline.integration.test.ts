@@ -17,8 +17,8 @@ import { buildDigest } from './services/digest';
  *
  *   RUN_INTEGRATION=1 npm test
  *
- * It asserts the properties that actually matter for plan quality — full
- * coverage, real URLs, capacity respected — and prints the token ledger so the
+ * It asserts the properties that actually matter for plan quality - full
+ * coverage, real URLs, capacity respected - and prints the token ledger so the
  * cost of a build is a measured number rather than an estimate.
  */
 
@@ -98,12 +98,12 @@ describeLive('live plan pipeline', () => {
 
       console.log('\nCURATION →', curation.stats);
       curation.resources.slice(0, 8).forEach((r) =>
-        console.log(`   ${r.score.toFixed(3)} [${r.kind}] ${r.title.slice(0, 62)} — ${r.why}`),
+        console.log(`   ${r.score.toFixed(3)} [${r.kind}] ${r.title.slice(0, 62)} - ${r.why}`),
       );
 
       expect(curation.resources.length).toBeGreaterThan(5);
 
-      // Every URL is real and parseable — the guarantee a model cannot give.
+      // Every URL is real and parseable - the guarantee a model cannot give.
       for (const resource of curation.resources) {
         expect(() => new URL(resource.url)).not.toThrow();
         expect(resource.url).toMatch(/^https:\/\//);
@@ -254,7 +254,7 @@ describeLive('live plan pipeline', () => {
 
       expect(curation.resources.length).toBeGreaterThan(5);
 
-      // Every URL must be real and well-formed — this is the guarantee the
+      // Every URL must be real and well-formed - this is the guarantee the
       // old "let the model write the links" design could not make.
       for (const resource of curation.resources) {
         expect(() => new URL(resource.url)).not.toThrow();
@@ -298,7 +298,7 @@ describeLive('live plan pipeline', () => {
       console.log('  first 3 days:');
       schedule.sessions.slice(0, 3).forEach((s) =>
         console.log(
-          `    day ${s.dayIndex} (${s.date}) ${s.plannedMinutes}m — ${s.headline}\n` +
+          `    day ${s.dayIndex} (${s.date}) ${s.plannedMinutes}m - ${s.headline}\n` +
             s.items.map((i) => `        [${i.kind}] ${i.title} · ${i.estMinutes}m`).join('\n'),
         ),
       );
@@ -306,7 +306,7 @@ describeLive('live plan pipeline', () => {
       expect(schedule.sessions.length).toBeGreaterThan(100);
       expect(schedule.stats.itemCount).toBeGreaterThan(topics.length);
 
-      // Capacity is never exceeded — the core promise of the scheduler.
+      // Capacity is never exceeded - the core promise of the scheduler.
       for (const session of schedule.sessions) {
         const dow = new Date(`${session.date}T00:00:00Z`).getUTCDay();
         expect(session.plannedMinutes).toBeLessThanOrEqual(dow === 0 || dow === 6 ? 300 : 120);
@@ -354,7 +354,7 @@ describeLive('live plan pipeline', () => {
       // spread across concurrent calls; prompt tokens are processed in parallel
       // and are free on this tier.
       //
-      // The ceiling is here to catch a real regression — a runaway repair loop,
+      // The ceiling is here to catch a real regression - a runaway repair loop,
       // or a shard fallback chain firing on every request.
       expect(total.totalTokens).toBeLessThan(24_000);
     },

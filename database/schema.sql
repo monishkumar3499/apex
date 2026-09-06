@@ -1,5 +1,5 @@
 -- ============================================================================
--- Kairo · AI Prep Engine — PostgreSQL / Supabase schema
+-- Kairo · AI Prep Engine - PostgreSQL / Supabase schema
 -- ============================================================================
 -- Run this whole file once in the Supabase SQL editor. It is idempotent.
 --

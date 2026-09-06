@@ -1,5 +1,5 @@
 /**
- * Stage 1 — Intake classifier.
+ * Stage 1 - Intake classifier.
  *
  * Cheapest call in the pipeline (~250 in / ~180 out on the nano tier). It
  * decides which blueprint the plan uses and asks at most two goal-specific
@@ -19,7 +19,7 @@ Rules:
 - slug: lowercase kebab-case, stable across phrasings of the same goal.
 - lvl: infer from the user's words; default "beginner" when unstated.
 - ask: 0-2 questions that would MATERIALLY change the plan and are not already answered by the user's input. Each needs 2-4 concrete options. Ask about specialisation, target tier, or exam paper only when it genuinely branches the syllabus. Return [] when nothing important is missing.
-- Never ask about hours per day, deadline, or current level — already collected.`;
+- Never ask about hours per day, deadline, or current level - already collected.`;
 
 export interface IntakeQuestion {
   id: string;

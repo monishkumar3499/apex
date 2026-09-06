@@ -30,7 +30,7 @@ export interface MapTopic {
    * The topic's shelf, best-ranked first.
    *
    * Was a bare `resourceCount`. A number told the learner material existed and
-   * gave them no way to open it, which is the worst of both — it advertises
+   * gave them no way to open it, which is the worst of both - it advertises
    * something the screen cannot deliver.
    */
   resources: Resource[];
@@ -397,7 +397,7 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
             </Button>
             <Button asChild variant="ghost" size="sm">
               {/* Pre-filters the Library to this topic, which is the other half
-                  of "I can search for it" — see `?q=` in library/page.tsx. */}
+                  of "I can search for it" - see `?q=` in library/page.tsx. */}
               <Link href={`/plan/${planId}/library?q=${encodeURIComponent(topic.title)}`}>
                 <Library />
                 All resources
@@ -415,7 +415,7 @@ function TopicRow({ topic, planId }: { topic: MapTopic; planId: string }) {
  * Five pips: a glanceable mastery read that needs no legend.
  *
  * The count of filled pips carries the value, so the reading does not depend
- * on separating violet from emerald — the colour only adds the "past 70%"
+ * on separating violet from emerald - the colour only adds the "past 70%"
  * threshold on top of a signal that is already there.
  */
 function MasteryPip({ mastery }: { mastery: number }) {

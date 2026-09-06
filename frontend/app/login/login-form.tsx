@@ -22,7 +22,7 @@ function GoogleMark() {
  *
  * That hook opts the whole subtree out of prerendering, so the login form had to
  * sit behind a Suspense boundary and the page's static HTML contained an empty
- * box. The learner saw a blank panel until hydration — and a sign-in error
+ * box. The learner saw a blank panel until hydration - and a sign-in error
  * redirected here was invisible for that whole window. Reading the query on the
  * server means the form and the error are in the first paint.
  */
@@ -78,7 +78,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
         setError(error.message);
         setLoading(null);
       }
-      // On success the browser navigates away — leave the spinner running.
+      // On success the browser navigates away - leave the spinner running.
     } catch (thrown) {
       setError((thrown as Error).message);
       setLoading(null);
@@ -97,7 +97,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
           It expires in an hour.
         </p>
         <p className="mx-auto mt-3 max-w-xs text-xs leading-relaxed text-ink-faint">
-          Open it in this browser — the link is tied to the session that requested it.
+          Open it in this browser - the link is tied to the session that requested it.
         </p>
         <Button variant="link" className="mt-5" onClick={() => setSent(false)}>
           Use a different email
@@ -116,7 +116,7 @@ export function LoginForm({ next, initialError }: { next: string; initialError: 
       {!configured && (
         <Callout tone="danger" className="mt-6" icon={<AlertTriangle />}>
           This build is missing its public Supabase credentials, so sign-in cannot run. They are
-          inlined at build time — pass them as Docker build args.
+          inlined at build time - pass them as Docker build args.
         </Callout>
       )}
 

@@ -81,7 +81,7 @@ export function DrillView({
       if (!body.ok) throw new Error(body.error ?? 'Could not load cards');
 
       if (!body.data.length) {
-        toast.info('Nothing to drill here yet — finish a Learn item on this topic first.');
+        toast.info('Nothing to drill here yet - finish a Learn item on this topic first.');
         setLoading(false);
         return;
       }
@@ -197,7 +197,7 @@ export function DrillView({
           </div>
 
           <p className="mx-auto mt-6 max-w-sm text-xs leading-relaxed text-ink-faint">
-            Cards you found hard come back sooner. Cards you found easy will not reappear for weeks —
+            Cards you found hard come back sooner. Cards you found easy will not reappear for weeks -
             that gap is what turns recall into memory.
           </p>
 
@@ -245,8 +245,8 @@ export function DrillView({
 
           The transition is a card deck rather than a horizontal slide: the
           graded card turns away into depth and the next one rises from behind
-          it. That is what a spaced-repetition queue actually is — a stack you
-          are working through — and the depth cue says "that one is behind you"
+          it. That is what a spaced-repetition queue actually is - a stack you
+          are working through - and the depth cue says "that one is behind you"
           in a way a sideways slide does not.
 
           `perspective` lives on the wrapper, not on the animating element: a
@@ -351,7 +351,7 @@ export function DrillView({
 
                   {card.kind === 'mcq' && (
                     <p className={cn('mt-3 text-sm font-medium', isCorrect ? 'text-success' : 'text-danger')}>
-                      {isCorrect ? 'Correct.' : 'Not quite — read the explanation before grading yourself.'}
+                      {isCorrect ? 'Correct.' : 'Not quite - read the explanation before grading yourself.'}
                     </p>
                   )}
 

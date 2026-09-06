@@ -4,10 +4,10 @@ const plugin = require('tailwindcss/plugin');
 const channel = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
 /**
- * Kairo — Aurora Glass.
+ * Kairo - Aurora Glass.
  *
  * The token names are semantic, never literal: `accent`, not `violet`. That is
- * what let the whole app change theme by rewriting one CSS file — every one of
+ * what let the whole app change theme by rewriting one CSS file - every one of
  * the ~40 components was already asking for "the accent" rather than for a
  * specific hue.
  */
@@ -18,7 +18,7 @@ module.exports = {
     extend: {
       /**
        * `xs` covers the small-phone floor. A 320px-wide iPhone SE is still in
-       * real use, and Tailwind's smallest default breakpoint is 640px — so
+       * real use, and Tailwind's smallest default breakpoint is 640px - so
        * everything between 320 and 640 was being designed by accident.
        */
       screens: {
@@ -28,9 +28,9 @@ module.exports = {
         '3xl': '1800px',
         /** Opt-in fine-pointer styling, so hover effects do not stick on touch. */
         pointer: { raw: '(hover: hover) and (pointer: fine)' },
-        /** Short viewports — a phone in landscape, or a small laptop. */
+        /** Short viewports - a phone in landscape, or a small laptop. */
         'h-sm': { raw: '(max-height: 720px)' },
-        /** Very short — a phone in landscape with the keyboard up. */
+        /** Very short - a phone in landscape with the keyboard up. */
         'h-xs': { raw: '(max-height: 560px)' },
         /**
          * Devices that can actually afford the expensive layers.
@@ -77,7 +77,7 @@ module.exports = {
         /**
          * The second accent: cyan.
          *
-         * Carries *quantity* — progress, throughput, data — while violet
+         * Carries *quantity* - progress, throughput, data - while violet
          * carries *state*. Keeping those two jobs on two hues is what stops the
          * palette from turning into decoration.
          */
@@ -97,7 +97,7 @@ module.exports = {
         display: ['var(--font-outfit)', 'var(--font-inter)', 'ui-sans-serif', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
         /**
-         * Long-form prose only — coach answers, topic summaries, outcomes.
+         * Long-form prose only - coach answers, topic summaries, outcomes.
          *
          * Never for controls. A serif button label reads as a rendering
          * accident, and the whole value of the pairing is that the two faces
@@ -119,7 +119,7 @@ module.exports = {
         'fluid-h2': ['clamp(1.5rem, 1.1rem + 1.7vw, 2.5rem)', { lineHeight: '1.12', letterSpacing: '-0.025em' }],
         /** The standard screen title inside the app. */
         'fluid-h3': ['clamp(1.25rem, 1.1rem + 0.75vw, 1.75rem)', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
-        /** Oversized numerals — streaks, day counts, the progress ring centre. */
+        /** Oversized numerals - streaks, day counts, the progress ring centre. */
         'fluid-stat': ['clamp(1.75rem, 1.2rem + 2vw, 3rem)', { lineHeight: '1', letterSpacing: '-0.04em' }],
       },
       borderRadius: {
@@ -127,7 +127,7 @@ module.exports = {
         field: '11px',
         card: '16px',
         panel: '22px',
-        /** The largest containers — hero mocks, modal shells. */
+        /** The largest containers - hero mocks, modal shells. */
         shell: '28px',
       },
       boxShadow: {
@@ -143,7 +143,7 @@ module.exports = {
         e3: '0 2px 4px rgb(var(--shadow-color) / 0.12), 0 24px 56px -16px rgb(var(--shadow-color) / 0.45)',
         /** The deepest layer: modals and the hero mock, genuinely off the page. */
         e4: '0 4px 8px rgb(var(--shadow-color) / 0.14), 0 40px 90px -24px rgb(var(--shadow-color) / 0.6)',
-        /** "This is the live thing" — accent-tinted focus elevation. */
+        /** "This is the live thing" - accent-tinted focus elevation. */
         glow: '0 0 0 1px rgb(var(--accent) / 0.22), 0 8px 34px -12px rgb(var(--accent) / 0.5)',
         /** A stronger bloom, for the one element being acted on. */
         'glow-lg': '0 0 0 1px rgb(var(--accent) / 0.3), 0 0 28px -4px rgb(var(--accent) / 0.35), 0 18px 60px -18px rgb(var(--accent) / 0.55)',
@@ -182,7 +182,7 @@ module.exports = {
       minWidth: { touch: '2.75rem' },
       blur: { glass: 'var(--glass-blur)' },
       transitionTimingFunction: {
-        /** The house easing. Fast out, long settle — reads as physical. */
+        /** The house easing. Fast out, long settle - reads as physical. */
         out: 'cubic-bezier(0.16, 1, 0.3, 1)',
         spring: 'cubic-bezier(0.34, 1.36, 0.64, 1)',
         /** For something arriving from depth: slow start, decisive landing. */
@@ -237,7 +237,7 @@ module.exports = {
           '0%, 100%': { opacity: '0.45' },
           '50%': { opacity: '1' },
         },
-        /** A light travelling along a horizontal rule — used under section heads. */
+        /** A light travelling along a horizontal rule - used under section heads. */
         'scan-x': {
           from: { transform: 'translateX(-100%)' },
           to: { transform: 'translateX(320%)' },
@@ -275,7 +275,7 @@ module.exports = {
      *
      * Tailwind v3 ships no `perspective`, `transform-style` or `translateZ`
      * scale, so a depth-based design either writes arbitrary `[transform:…]`
-     * everywhere — losing responsive and state variants — or adds them here
+     * everywhere - losing responsive and state variants - or adds them here
      * once. These generate as real utilities, so `md:perspective-1200` and
      * `hover:translate-z-6` both work.
      */
@@ -304,7 +304,7 @@ module.exports = {
         { values: theme('spacing') },
       );
 
-      // rotateX/Y take an angle, so they need their own scale — running them
+      // rotateX/Y take an angle, so they need their own scale - running them
       // off `spacing` would generate `rotate-x-4 { rotateX(1rem) }`, which is
       // silently invalid.
       matchUtilities(

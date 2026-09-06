@@ -17,8 +17,8 @@ export interface Message {
  * Reasoning tokens are billed against the SAME `max_tokens` budget as the
  * answer, so a reasoning model handed a budget sized for a plain instruct
  * model spends it all thinking and returns `finish_reason: "length"` with
- * empty or truncated content. Capping effort — or excluding reasoning
- * entirely, where the endpoint permits it — keeps the budget for the answer.
+ * empty or truncated content. Capping effort - or excluding reasoning
+ * entirely, where the endpoint permits it - keeps the budget for the answer.
  */
 export interface ReasoningControl {
   effort?: 'low' | 'medium' | 'high';
@@ -49,7 +49,7 @@ export interface CompletionOptions {
   /** Per-call ceiling. Defaults to 75s. */
   timeoutMs?: number;
   /**
-   * Whose work this is — a user id, or `'shared'`.
+   * Whose work this is - a user id, or `'shared'`.
    *
    * The provider gate round-robins between owners, so one learner's six-month
    * build cannot starve nineteen other people's single drill request. Omitting

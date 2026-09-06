@@ -11,7 +11,7 @@ let cached: ReturnType<typeof createBrowserClient> | null = null;
  *
  * `NEXT_PUBLIC_*` values are inlined by the compiler at **build** time, not
  * read at runtime. A Docker image built without them therefore ships a browser
- * bundle containing `undefined` — and `--env-file` at `docker run` cannot fix
+ * bundle containing `undefined` - and `--env-file` at `docker run` cannot fix
  * it, because there is no longer anything to substitute. The symptom is that
  * "Continue with Google" does nothing at all, while every server route keeps
  * working, so the config looks fine.

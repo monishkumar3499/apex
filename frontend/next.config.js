@@ -3,7 +3,7 @@ const path = require('path');
 /**
  * The agent/planner code lives in the sibling ../backend directory, which has no
  * node_modules of its own. These aliases pin its imports to the frontend's
- * installed copies — without them a build resolves two React/Supabase instances.
+ * installed copies - without them a build resolves two React/Supabase instances.
  * Keep in sync with the `paths` block in tsconfig.json.
  */
 const SHARED = ['@supabase/supabase-js', '@supabase/ssr', 'pino', 'zod'];

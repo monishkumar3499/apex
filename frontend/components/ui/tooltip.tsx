@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
  * A tooltip is a fine-pointer affordance: there is no hover on a touch screen,
  * so anything that *only* exists in a tooltip is invisible to half the users.
  * Every call site here labels a control that is already labelled for screen
- * readers — the tooltip is the sighted-mouse convenience, never the only copy.
+ * readers - the tooltip is the sighted-mouse convenience, never the only copy.
  */
 const TooltipProvider = TooltipPrimitive.Provider;
 const Tooltip = TooltipPrimitive.Root;

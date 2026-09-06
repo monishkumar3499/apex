@@ -28,7 +28,7 @@ export function termFreq(tokens: string[]): Map<string, number> {
 /**
  * Cosine similarity over term frequencies. Cheap, order-independent, and good
  * enough to bind a topic like "Clock Domain Crossing" to a video titled
- * "CDC — metastability and synchronizers".
+ * "CDC - metastability and synchronizers".
  */
 export function similarity(a: string, b: string): number {
   const ta = termFreq(tokenize(a));

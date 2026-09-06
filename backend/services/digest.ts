@@ -2,7 +2,7 @@
  * The plan digest: a compact, deterministic summary of a plan used as the
  * coach's standing context.
  *
- * Built in code, not by a model — it is exact, free, and regenerates instantly
+ * Built in code, not by a model - it is exact, free, and regenerates instantly
  * when the plan changes. Budgeted to roughly 400 tokens.
  */
 
@@ -42,7 +42,7 @@ export function buildDigest(input: DigestInput): string {
 
   for (const unit of input.units) {
     const topics = unit.topics.map((t) => t.title).join('; ');
-    lines.push(`${unit.idx + 1}. ${unit.title} [w${unit.weight}] — ${topics}`);
+    lines.push(`${unit.idx + 1}. ${unit.title} [w${unit.weight}] - ${topics}`);
   }
 
   if (input.deferredTopics.length) {
@@ -59,7 +59,7 @@ export function buildDigest(input: DigestInput): string {
         const topics = u.topics.map((t) => t.title);
         const shown = topics.slice(0, 4).join('; ');
         const rest = topics.length - 4;
-        return `${u.idx + 1}. ${u.title} [w${u.weight}] — ${shown}${rest > 0 ? ` (+${rest} more)` : ''}`;
+        return `${u.idx + 1}. ${u.title} [w${u.weight}] - ${shown}${rest > 0 ? ` (+${rest} more)` : ''}`;
       }),
     ];
     digest = trimmed.join('\n');

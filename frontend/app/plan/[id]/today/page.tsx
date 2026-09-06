@@ -81,7 +81,7 @@ export default async function TodayPage({ params }: Props) {
     scheduler pinned to each item.
 
     A `learn` item opens with its single best-matched resource, which is often a
-    doc — so the topic's video was reachable only from the Library, two
+    doc - so the topic's video was reachable only from the Library, two
     navigations away from the screen the learner is actually on. One extra query
     keyed on the topics already loaded fixes that.
   */

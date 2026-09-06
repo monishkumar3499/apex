@@ -94,7 +94,7 @@ export async function POST(request: Request): Promise<Response> {
         logger.error({ error, planId: body.planId }, 'coach stream failed');
         const message =
           answer.trim().length > 0
-            ? '\n\n_(reply cut short — ask again if you need the rest)_'
+            ? '\n\n_(reply cut short - ask again if you need the rest)_'
             : 'I could not reach the model just now. Try again in a moment.';
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ delta: message })}\n\n`));
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, error: true })}\n\n`));

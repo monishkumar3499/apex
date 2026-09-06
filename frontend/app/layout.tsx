@@ -12,8 +12,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 /**
  * A real monospace, for the one job Inter cannot do.
  *
- * Every number in Kairo changes — day 24 of 180, 2h 40m remaining, a 12-day
- * streak — and a proportional font reflows the layout on each tick. Inter's
+ * Every number in Kairo changes - day 24 of 180, 2h 40m remaining, a 12-day
+ * streak - and a proportional font reflows the layout on each tick. Inter's
  * `tabular-nums` fixes the width but not the *character*: a schedule reads as
  * instrumentation, and instrument readouts are monospaced. Loaded at two
  * weights only, so this costs about 15KB.
@@ -28,7 +28,7 @@ const mono = JetBrains_Mono({
 /**
  * The reading face, for prose the learner is trying to *learn from*.
  *
- * Inter is an excellent interface font and a mediocre reading one — it is
+ * Inter is an excellent interface font and a mediocre reading one - it is
  * optimised for labels, buttons and dense data, which is why it is still what
  * every control in this app uses. But the app also contains real prose: a
  * coach answer runs to 300 words, a topic summary explains a concept, an
@@ -37,7 +37,7 @@ const mono = JetBrains_Mono({
  * dashboard rather than like study material.
  *
  * Newsreader is a screen-first serif with a large x-height and open
- * counters — it holds up at 15px on a phone, which most serifs do not. Loaded
+ * counters - it holds up at 15px on a phone, which most serifs do not. Loaded
  * at two weights and italic only; the italic matters because prose actually
  * uses emphasis, unlike UI copy.
  */
@@ -51,21 +51,21 @@ const reading = Newsreader({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Kairo — every hour you have, placed',
+    default: 'Kairo - every hour you have, placed',
     template: '%s · Kairo',
   },
   description:
     'Tell Kairo what you are preparing for and by when. It finds the best real resources, then builds a day-by-day study map that fits the hours you actually have.',
   applicationName: 'Kairo',
   openGraph: {
-    title: 'Kairo — every hour you have, placed',
+    title: 'Kairo - every hour you have, placed',
     description: 'An AI prep engine that turns any goal into an executable, day-by-day study map.',
     siteName: 'Kairo',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Kairo — every hour you have, placed',
+    title: 'Kairo - every hour you have, placed',
     description: 'An AI prep engine that turns any goal into an executable, day-by-day study map.',
   },
 };
@@ -128,7 +128,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   className: 'glass-raised !rounded-xl !text-sm !backdrop-blur-xl',
                   style: {
                     // Sonner writes inline styles, so these have to be inline
-                    // to win — a class would lose to its own defaults.
+                    // to win - a class would lose to its own defaults.
                     background: 'rgb(var(--surface) / 0.9)',
                     color: 'rgb(var(--text))',
                     border: '1px solid rgb(var(--glass-edge) / 0.12)',

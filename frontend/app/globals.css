@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 /* ==========================================================================
-   Kairo — Aurora Glass
+   Kairo - Aurora Glass
 
-   καιρός: the opportune moment. The product's one idea is time — capacity-aware
+   καιρός: the opportune moment. The product's one idea is time - capacity-aware
    scheduling, reviews that return at 2/7/21 days, mocks spread across the
-   timeline — so the visual language is built from time made visible: orbits,
+   timeline - so the visual language is built from time made visible: orbits,
    depth, drifting light.
 
    THREE LAYERS, always in this order, back to front:
@@ -18,11 +18,11 @@
                       learner reads lives here, and it is deliberately the only
                       layer with a hard edge.
      2  THE LIGHT     accent bloom, specular sweeps, orbit rails. Applied to
-                      exactly one element per screen — whatever is live.
+                      exactly one element per screen - whatever is live.
 
    The rule that keeps this from becoming decoration: **depth encodes state.**
    Something nearer the viewer is more urgent. A card that lifts is a card you
-   are meant to act on. Blur means "behind, later, not now" — never merely
+   are meant to act on. Blur means "behind, later, not now" - never merely
    "pretty". Glass that carries no information is a performance cost with no
    argument for it.
 
@@ -88,7 +88,7 @@
       The hairline / neutral-tint channel, and it is the one glass token that
       must flip with the theme.
 
-      `--glass-bg` is always white because it is a *specular highlight* — light
+      `--glass-bg` is always white because it is a *specular highlight* - light
       falling on a bevel. `--glass-edge` does the opposite job: it is the tint
       used for translucent fills and 1px borders, so it has to darken whatever
       it sits on. White at 8% lightens a dark panel exactly as intended and is
@@ -155,7 +155,7 @@
       ground and fails over a busy one: on the landing hero the orbit field's
       nodes and rings read straight through the preview card and land on top of
       its text. Glass has to stay a surface you read ON, not a window you read
-      THROUGH — this is the lowest value where the aurora is still clearly
+      THROUGH - this is the lowest value where the aurora is still clearly
       present behind the panel but text keeps its contrast.
     */
     --glass-alpha:     0.07;
@@ -179,7 +179,7 @@
     The plan workspace rail's width, as a variable.
 
     It lives here rather than in the sidebar component because the *layout*
-    needs it too — the content column is padded by exactly this much, and that
+    needs it too - the content column is padded by exactly this much, and that
     layout is a server component which cannot see the sidebar's React state.
     A variable on the root element is the one channel both can read.
   */
@@ -193,7 +193,7 @@
 
   /*
     Chrome to subtract from `100dvh` for a workspace route that wants to fill
-    the viewport — currently only the coach, whose composer must sit at the
+    the viewport - currently only the coach, whose composer must sit at the
     bottom of the screen rather than floating above a band of dead space.
 
     It is a variable because the number is a sum of things declared in three
@@ -253,7 +253,7 @@
     overflow-x: hidden;
   }
 
-  /* Long unbroken strings — a URL, a slug, a chemical name — are the usual
+  /* Long unbroken strings - a URL, a slug, a chemical name - are the usual
      cause of a horizontally scrolling phone layout. */
   h1, h2, h3, h4, p, li, td, th, dt, dd {
     overflow-wrap: break-word;
@@ -272,7 +272,7 @@
     }
   }
 
-  /* Tabular figures everywhere a number changes — no layout jitter. */
+  /* Tabular figures everywhere a number changes - no layout jitter. */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
@@ -305,7 +305,7 @@
 
 @layer components {
   /* ==================================================================
-     LAYER 0 — THE VOID
+     LAYER 0 - THE VOID
      ================================================================== */
 
   /**
@@ -360,7 +360,7 @@
    * An inline SVG feTurbulence, so it costs one tiny data URI rather than an
    * image request. Its job is not texture for its own sake: large flat
    * gradients band badly on 8-bit panels, and a little noise dithers those
-   * bands away. Very low opacity — visible as smoothness, not as grain.
+   * bands away. Very low opacity - visible as smoothness, not as grain.
    */
   .grain::after {
     content: '';
@@ -396,7 +396,7 @@
   }
 
   /* ==================================================================
-     LAYER 1 — THE GLASS
+     LAYER 1 - THE GLASS
      ================================================================== */
 
   /**
@@ -406,7 +406,7 @@
    * one of them makes it read as a grey box:
    *
    *   1. a backdrop blur, so what is behind it is *present but unreadable*
-   *   2. a bright hairline on the top edge only — specular highlight from a
+   *   2. a bright hairline on the top edge only - specular highlight from a
    *      light source above, which is what tells the eye there is a bevel
    *   3. a shadow that is offset downward, so the panel has somewhere to be
    *
@@ -438,7 +438,7 @@
   }
 
   /**
-   * The raised variant — the *one* panel on a screen that is being acted on.
+   * The raised variant - the *one* panel on a screen that is being acted on.
    *
    * Reserved deliberately. If three things on a screen are raised, nothing is.
    */
@@ -580,7 +580,7 @@
   }
 
   /* ==================================================================
-     LAYER 2 — THE LIGHT
+     LAYER 2 - THE LIGHT
      ================================================================== */
 
   /**
@@ -650,7 +650,7 @@
   }
 
   /* ==================================================================
-     THE ORBIT — Kairo's signature graphic
+     THE ORBIT - Kairo's signature graphic
      ================================================================== */
 
   /**
@@ -661,7 +661,7 @@
    * plan map, the landing hero.
    *
    * It replaces the old flat "spine" rail with the same idea rendered with
-   * depth — the line now carries a travelling light and its nodes sit *on* it
+   * depth - the line now carries a travelling light and its nodes sit *on* it
    * rather than beside it, so an ordered list reads as a trajectory.
    *
    * Drawn as a background on the list container rather than as a per-row
@@ -760,7 +760,7 @@
      A two-hue sequential scale, low → high magnitude, running violet → cyan.
      Both modes were generated at fixed OKLCH endpoints and validated:
      monotone lightness, >=0.06 delta-L between adjacent steps, and a light-end
-     step that clears 2:1 against its own surface. Never edit a step by eye —
+     step that clears 2:1 against its own surface. Never edit a step by eye -
      regenerate and re-validate the whole ramp.
      ------------------------------------------------------------------ */
   .viz-heat {
@@ -918,7 +918,7 @@
 
    Everything above either explains a spatial relationship or confirms an
    action. With the OS setting on, the learner gets the final state
-   immediately — but note this is a blunt instrument by design: it kills
+   immediately - but note this is a blunt instrument by design: it kills
    *every* animation, including ones we might consider safe, because a
    per-animation allowlist is a thing that rots.
    ========================================================================== */

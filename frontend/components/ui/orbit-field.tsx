@@ -4,11 +4,11 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * The orbit field — Kairo's signature object.
+ * The orbit field - Kairo's signature object.
  *
  * A perspective-projected orbital system: concentric rings on different
  * inclinations, each carrying nodes that ride round it and swing back. It is
- * the product's core mechanic drawn literally — a topic is placed once, then
+ * the product's core mechanic drawn literally - a topic is placed once, then
  * returns at 2, 7 and 21 days, which is an orbit rather than a queue.
  *
  * WHY CANVAS 2D AND NOT WEBGL
@@ -16,7 +16,7 @@ import { cn } from '../../lib/utils';
  * A WebGL scene would render this with real bloom and depth of field, and cost
  * ~150KB gzipped plus a shader compile before the first frame. Kairo is opened
  * every morning, frequently on a mid-range phone, and the thing a learner
- * wants in that first second is today's tasks — not a library booting. Canvas
+ * wants in that first second is today's tasks - not a library booting. Canvas
  * 2D with a pre-rendered glow sprite gets ~90% of the look for zero
  * dependencies and a few hundred bytes, so that is the trade taken.
  *
@@ -27,7 +27,7 @@ import { cn } from '../../lib/utils';
  *      on every frame and is what turns a smooth field into a stuttering one.
  *   2. Ring segments are batched into a handful of depth bands, so a ring is
  *      6 stroke calls rather than 64. The visual difference is nil.
- *   3. The loop does not run when it cannot be seen — an IntersectionObserver
+ *   3. The loop does not run when it cannot be seen - an IntersectionObserver
  *      stops it off-screen and `visibilitychange` stops it in a background
  *      tab. An animated background quietly draining battery behind another tab
  *      is the most common version of this component done badly.
@@ -50,7 +50,7 @@ interface RingSpec {
  *
  * Evenly spaced rings on one plane read as a dartboard. Radii that widen
  * outward read as perspective, and inclinations far apart make each ring a
- * distinct plane — which is what sells the depth.
+ * distinct plane - which is what sells the depth.
  *
  * The inclinations are the one number here worth getting right, and the first
  * attempt got it wrong: at ~1.2rad every ring is viewed so close to edge-on
@@ -222,7 +222,7 @@ export function OrbitField({
       // scales it by the field radius.
       const depth = focal / (focal - z1);
 
-      // `y0` is unchanged by the Y-axis spin — that is what makes the spin a
+      // `y0` is unchanged by the Y-axis spin - that is what makes the spin a
       // rotation of the whole system rather than a wobble.
       return { x: cx + x1 * depth, y: cy + y0 * depth, z: z1, depth };
     };

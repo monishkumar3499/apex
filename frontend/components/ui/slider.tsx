@@ -8,7 +8,7 @@ import { cn } from '../../lib/utils';
  * Slider, on Radix.
  *
  * `<input type="range">` styles differently in every engine, gives no control
- * over the thumb's hit area, and on a phone its thumb is roughly 16px — well
+ * over the thumb's hit area, and on a phone its thumb is roughly 16px - well
  * under the 44px touch minimum, so the capacity step was genuinely fiddly to
  * set. This thumb is a 44px target with a visible 20px cap, and arrow keys,
  * Home/End and Page Up/Down all work.

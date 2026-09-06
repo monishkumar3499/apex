@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cn } from '../../lib/utils';
 
 /**
- * Layer 0 — the void.
+ * Layer 0 - the void.
  *
  * A slow aurora drifting through near-black indigo, with optional film grain
  * and a perspective floor grid. This is the ground everything else floats
@@ -29,7 +29,7 @@ export function Void({
    * `focus`   a single pool of light from above, for a reading pane
    */
   variant?: 'hero' | 'ambient' | 'focus';
-  /** Adds the receding floor grid. Hero surfaces only — it is loud. */
+  /** Adds the receding floor grid. Hero surfaces only - it is loud. */
   grid?: boolean;
   className?: string;
 }) {
@@ -71,7 +71,7 @@ export function Void({
 /**
  * Concentric orbit rings, in pure CSS.
  *
- * The cheap version of `OrbitField` — no canvas, no JavaScript, no measuring.
+ * The cheap version of `OrbitField` - no canvas, no JavaScript, no measuring.
  * Used wherever the orbit motif should be *present* rather than the subject:
  * empty states, section anchors, the sign-in page, behind a stat.
  *

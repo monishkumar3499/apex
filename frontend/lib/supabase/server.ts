@@ -22,7 +22,7 @@ export async function supabaseServer() {
           try {
             list.forEach(({ name, value, options }) => store.set(name, value, options));
           } catch {
-            // Called from a server component — middleware already refreshed the session.
+            // Called from a server component - middleware already refreshed the session.
           }
         },
       },
@@ -44,7 +44,7 @@ export const demoMode = () => clean(process.env.NEXT_PUBLIC_DEMO_MODE) === 'true
 export async function currentUser(): Promise<SessionUser | null> {
   // Read through `clean()` like every other consumer. Comparing the raw value
   // meant a quoted `"true"` in .env silently disabled demo mode here while
-  // middleware still honoured it — auth then half-applied, which is worse
+  // middleware still honoured it - auth then half-applied, which is worse
   // than either mode.
   if (demoMode()) {
     return { id: DEMO_USER_ID, email: 'demo@kairo.app', name: 'Demo Learner', avatarUrl: null };

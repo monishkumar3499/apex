@@ -13,7 +13,7 @@ type Tone = 'accent' | 'success' | 'info' | 'warn' | 'danger';
  * The accent bar is a violet→cyan gradient rather than a flat fill: the two
  * accents mean "state" and "quantity", and a progress bar is literally both at
  * once, so the gradient is the palette's own logic rather than a flourish. The
- * semantic tones stay flat — an emerald "done" bar that shifted hue would
+ * semantic tones stay flat - an emerald "done" bar that shifted hue would
  * imply a distinction that is not there.
  */
 const BAR: Record<Tone, string> = {
@@ -91,7 +91,7 @@ export function Progress({
  * Circular progress for the day/plan completion dials.
  *
  * Motion drives the dash offset so the ring eases into place on mount, which
- * is the moment the number actually means something — a static ring reads as
+ * is the moment the number actually means something - a static ring reads as
  * a decoration rather than as a reading of the learner's day.
  */
 export function Dial({
@@ -113,7 +113,7 @@ export function Dial({
   /*
     `useReducedMotion` resolves to `false` during SSR and flips to `true` on the
     client for anyone with the OS setting on. It must therefore never decide
-    what the *first* render emits — driving `initial` from it made the server
+    what the *first* render emits - driving `initial` from it made the server
     and client disagree about the rendered `stroke-dashoffset`, which React
     reports as a hydration mismatch and does not repair.
 
@@ -144,7 +144,7 @@ export function Dial({
         {/*
           The lit arc is drawn twice: once blurred underneath as a bloom, once
           crisp on top. An SVG filter would be the "correct" way and costs a
-          separate render pass per dial — and there are six on the progress
+          separate render pass per dial - and there are six on the progress
           screen.
         */}
         <motion.circle

@@ -6,14 +6,14 @@ import { PROVIDERS, type ProviderId } from './providers';
  * Four mechanisms that together stop the pipeline from rate-limiting itself.
  *
  * `TokenBucket` decides whether a request is allowed to leave *at all* right
- * now, and — the part that matters — **re-learns the real ceiling** from the
+ * now, and - the part that matters - **re-learns the real ceiling** from the
  * 429s the upstream sends back. A published limit is a claim; the observed
  * limit is a fact, and free tiers routinely enforce something tighter than
  * they document.
  *
  * `ProviderGate` limits how *fast* requests leave and how many run at once.
- * The pipeline naturally bursts — curation fires every unit search together, a
- * blueprint fans out into concurrent shards — and a burst is precisely what
+ * The pipeline naturally bursts - curation fires every unit search together, a
+ * blueprint fans out into concurrent shards - and a burst is precisely what
  * trips a per-minute limit.
  *
  * `FairQueue` decides *whose* request leaves next. With twenty learners on one
@@ -87,7 +87,7 @@ export class TokenBucket {
   ) {
     this.rate = ceilingRpm;
     // Start with a full burst allowance. A cold process should not be
-    // artificially slow — the first few requests are exactly the ones a
+    // artificially slow - the first few requests are exactly the ones a
     // learner is watching a spinner for.
     this.tokens = Math.max(1, Math.min(ceilingRpm, 10));
   }
@@ -148,7 +148,7 @@ export class TokenBucket {
   /**
    * Record that the upstream refused us.
    *
-   * `retryAfterMs` is honoured verbatim when supplied — guessing shorter than
+   * `retryAfterMs` is honoured verbatim when supplied - guessing shorter than
    * the provider asked just burns another request inside the same window, and
    * on some upstreams resets it.
    */
@@ -332,7 +332,7 @@ export class ProviderGate {
 
   private async acquire(owner: string): Promise<void> {
     if (this.active >= this.config.concurrency) {
-      // A deep queue means the gate, not the upstream, is the bottleneck —
+      // A deep queue means the gate, not the upstream, is the bottleneck -
       // worth seeing before someone concludes the model is slow.
       if (this.queue.pending >= this.config.concurrency * 3) {
         logger.warn(
@@ -354,7 +354,7 @@ export class ProviderGate {
     //
     // The reservation has to be claimed *synchronously*. Computing the wait and
     // only then assigning `lastStart` lets every concurrent acquirer read the
-    // same value, all compute a wait of zero, and fire together — which is
+    // same value, all compute a wait of zero, and fire together - which is
     // precisely the burst this exists to prevent. Advancing `lastStart` before
     // the await gives each caller its own slot.
     const now = Date.now();
@@ -372,7 +372,7 @@ export class ProviderGate {
 /**
  * One gate and one bucket per provider, built from the registry.
  *
- * Sized from each vendor's published free-tier limits, then overridable — a
+ * Sized from each vendor's published free-tier limits, then overridable - a
  * second or third key on a provider genuinely multiplies its ceiling, and
  * `keyring.ts` accounts for that by giving every key its own bucket.
  */
@@ -455,7 +455,7 @@ class ModelBreaker {
     return cooldown;
   }
 
-  /** For diagnostics — /api/health can show why a tier is falling back. */
+  /** For diagnostics - /api/health can show why a tier is falling back. */
   snapshot() {
     const now = Date.now();
     return [...this.state.entries()].map(([model, entry]) => ({

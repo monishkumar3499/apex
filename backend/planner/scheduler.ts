@@ -65,7 +65,7 @@ export interface SchedResult {
   /**
    * Days reserved for consolidation, which must never carry new material.
    *
-   * Reported explicitly because "has a buffer item" is only a proxy for it —
+   * Reported explicitly because "has a buffer item" is only a proxy for it -
    * day one also gets a buffer item (the orientation win) and does teach new
    * material, so the invariant needs the real list to be testable.
    */
@@ -100,7 +100,7 @@ const ASSESS_MINUTES = 35;
  * small-signal model" as the same kind of work. They are not: the harder the
  * material, the sooner attention degrades and the more the learner needs a
  * boundary to stop at. Hard topics therefore arrive as more, shorter blocks
- * with the same total time — same coverage, far higher completion rate.
+ * with the same total time - same coverage, far higher completion rate.
  */
 function maxChunkFor(difficulty: number): number {
   if (difficulty >= 5) return 40;
@@ -115,7 +115,7 @@ function maxChunkFor(difficulty: number): number {
  * Interleaving helps retention, but only up to a point: a free Saturday with
  * 240 minutes of capacity would otherwise open five unrelated concepts in a
  * row, and nothing consolidates. Beyond the cap the day is filled with
- * practice and review of what is already open instead — which is the more
+ * practice and review of what is already open instead - which is the more
  * valuable use of the time anyway.
  */
 const MAX_NEW_TOPICS_PER_DAY = 3;
@@ -163,7 +163,7 @@ function orderTopics(topics: SchedTopic[]): SchedTopic[] {
 /**
  * Fit demand to capacity.
  *
- * Compression alone is a trap — squeezing 400 hours into 120 produces a plan
+ * Compression alone is a trap - squeezing 400 hours into 120 produces a plan
  * where nothing gets enough time. So we first defer whole low-value topics
  * (only ones nothing depends on) until the remainder can be compressed by a
  * factor that still leaves each topic teachable.
@@ -203,7 +203,7 @@ function fitToCapacity(
     compression = capacity / Math.max(1, demandOf(kept));
   }
 
-  // Never inflate beyond 1.5× — extra room becomes practice depth, not padding.
+  // Never inflate beyond 1.5× - extra room becomes practice depth, not padding.
   return { kept, deferred, compression: Math.min(1.5, Math.max(0.55, compression)) };
 }
 
@@ -311,7 +311,7 @@ export function buildSchedule(input: SchedInput): SchedResult {
       title: 'Set up and skim the map',
       detail:
         input.prepType === 'exam'
-          ? 'Ten minutes, no studying. Open the Map tab and read the unit titles so you know the shape of what is coming. Decide where you will sit and at what time each day — deciding once beats deciding daily.'
+          ? 'Ten minutes, no studying. Open the Map tab and read the unit titles so you know the shape of what is coming. Decide where you will sit and at what time each day - deciding once beats deciding daily.'
           : 'Ten minutes, no studying. Open the Map tab and read the unit titles so you know the shape of what is coming. Set up whatever you will build in, so tomorrow starts with the work and not the tooling.',
       estMinutes: Math.min(10, firstDay.capacity),
       resourceRank: null,
@@ -352,7 +352,7 @@ export function buildSchedule(input: SchedInput): SchedResult {
   /**
    * Move the cursor past days that have already met their new-concept quota.
    *
-   * Only applied when opening a topic — continuing one already in progress is
+   * Only applied when opening a topic - continuing one already in progress is
    * not new load. Gives up rather than deferring the topic if every remaining
    * day is full: a slightly overloaded day beats material silently vanishing.
    */
@@ -365,7 +365,7 @@ export function buildSchedule(input: SchedInput): SchedResult {
       if (!opened || opened.has(topicIdx) || opened.size < MAX_NEW_TOPICS_PER_DAY) return true;
       cursor++;
       if (!advance()) {
-        // Nothing left that satisfies the cap — fall back to the first usable
+        // Nothing left that satisfies the cap - fall back to the first usable
         // day rather than dropping the topic.
         cursor = start;
         return advance();
@@ -418,11 +418,11 @@ export function buildSchedule(input: SchedInput): SchedResult {
       place(cursor, {
         topicIdx: topic.idx,
         kind: 'learn',
-        title: multi ? `${topic.title} — part ${chunkNo + 1}` : topic.title,
+        title: multi ? `${topic.title} - part ${chunkNo + 1}` : topic.title,
         detail:
           chunkNo === 0
             ? 'Work through the attached resource actively: pause it, write the idea in your own words, and note every question it raises. If you cannot explain it without looking, you have not finished.'
-            : 'Pick up where you stopped — but first, from memory alone, say what the last block established. Check yourself, then continue.',
+            : 'Pick up where you stopped - but first, from memory alone, say what the last block established. Check yourself, then continue.',
         estMinutes: chunk,
         resourceRank: chunkNo % 3,
       });
@@ -456,7 +456,7 @@ export function buildSchedule(input: SchedInput): SchedResult {
             : `Build/apply: ${topic.title}`,
         detail:
           input.prepType === 'exam'
-            ? 'Solve without notes first. Mark every question you had to look up — those become drill cards.'
+            ? 'Solve without notes first. Mark every question you had to look up - those become drill cards.'
             : 'Apply it in code or on paper. Something small and complete beats something large and half-finished.',
         estMinutes: chunk,
         resourceRank: null,

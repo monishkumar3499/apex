@@ -11,7 +11,7 @@ export interface HeatDay {
 }
 
 /**
- * Study heatmap — sequential magnitude on a calendar.
+ * Study heatmap - sequential magnitude on a calendar.
  *
  * Colour is a single-hue ramp defined in globals.css (`.viz-heat`), bucketed
  * against the learner's own daily target rather than against a global maximum,
@@ -127,7 +127,7 @@ export function StudyHeatmap({
                       /*
                         Radix Tooltip replaces the hand-positioned hover card
                         this used to draw with `position: fixed` and raw
-                        client-rect maths — which put the tooltip in the wrong
+                        client-rect maths - which put the tooltip in the wrong
                         place as soon as the panel itself scrolled, and never
                         appeared at all on touch.
                       */

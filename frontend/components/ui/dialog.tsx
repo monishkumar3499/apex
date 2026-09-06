@@ -10,7 +10,7 @@ import { cn } from '../../lib/utils';
  *
  * The hand-rolled version this replaces had no focus trap, did not restore
  * focus to the trigger on close, and rendered inside the tree it was invoked
- * from — so a dialog opened from a card inherited that card's stacking context
+ * from - so a dialog opened from a card inherited that card's stacking context
  * and could be clipped by it. Radix portals it, traps focus, and handles the
  * scroll lock and `aria-hidden` on the rest of the page.
  */
@@ -47,7 +47,7 @@ const DialogContent = React.forwardRef<
       className={cn(
         'surface-raised fixed z-50 flex flex-col gap-4',
         /*
-          Anchored to the bottom of the screen on a phone — reachable with a
+          Anchored to the bottom of the screen on a phone - reachable with a
           thumb, and it does not fight the on-screen keyboard. It centres as
           soon as there is room for it to.
         */
@@ -89,8 +89,8 @@ function DialogHeader({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
 }
 
 /**
- * Buttons stack full-width and reverse on a phone — the primary action ends up
- * closest to the thumb — and return to a right-aligned row on a wider screen.
+ * Buttons stack full-width and reverse on a phone - the primary action ends up
+ * closest to the thumb - and return to a right-aligned row on a wider screen.
  */
 function DialogFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (

@@ -3,7 +3,7 @@
  *
  * A build takes tens of seconds. A spinner over that span reads as a hang, and
  * a progress bar alone gives the learner nothing to do with the wait. So the
- * wait carries content — and since the audience is someone who has just
+ * wait carries content - and since the audience is someone who has just
  * committed to studying, the content is about how learning and attention
  * actually work. Half of what is here is directly actionable on the plan they
  * are about to open.
@@ -14,7 +14,7 @@
  *      stated qualitatively, a verifiable fact, or an attributed quote. A
  *      fabricated "studies show 73%" is worse than no fact at all, because
  *      this screen is the first thing the product says to a new learner.
- *   2. Short enough to finish in one glance — roughly under 200 characters.
+ *   2. Short enough to finish in one glance - roughly under 200 characters.
  */
 
 export type InsightCategory = 'learning' | 'focus' | 'mind' | 'world';
@@ -51,7 +51,7 @@ export const INSIGHTS: Insight[] = [
     category: 'learning',
   },
   {
-    text: 'Mixing problem types feels harder and scores worse in practice — then transfers far better to the real test.',
+    text: 'Mixing problem types feels harder and scores worse in practice - then transfers far better to the real test.',
     source: 'interleaving',
     category: 'learning',
   },
@@ -61,7 +61,7 @@ export const INSIGHTS: Insight[] = [
     category: 'learning',
   },
   {
-    text: 'Guessing an answer before you are taught it improves later recall — even when the guess turns out to be wrong.',
+    text: 'Guessing an answer before you are taught it improves later recall - even when the guess turns out to be wrong.',
     source: 'the pretesting effect',
     category: 'learning',
   },
@@ -85,7 +85,7 @@ export const INSIGHTS: Insight[] = [
     category: 'learning',
   },
   {
-    text: 'Working memory, not willpower, is the bottleneck. A topic split into two sittings is not half-studied — it is correctly sized.',
+    text: 'Working memory, not willpower, is the bottleneck. A topic split into two sittings is not half-studied - it is correctly sized.',
     source: 'cognitive load theory',
     category: 'learning',
   },
@@ -159,7 +159,7 @@ export const INSIGHTS: Insight[] = [
 
   // ---- The mind -----------------------------------------------------------
   {
-    text: 'The first principle is that you must not fool yourself — and you are the easiest person to fool.',
+    text: 'The first principle is that you must not fool yourself - and you are the easiest person to fool.',
     source: 'Richard Feynman',
     category: 'mind',
   },
@@ -174,7 +174,7 @@ export const INSIGHTS: Insight[] = [
     category: 'mind',
   },
   {
-    text: 'Once you understand something, you can no longer imagine not understanding it — which is why experts write confusing explanations.',
+    text: 'Once you understand something, you can no longer imagine not understanding it - which is why experts write confusing explanations.',
     source: 'the curse of knowledge',
     category: 'mind',
   },
@@ -227,7 +227,7 @@ export const INSIGHTS: Insight[] = [
     category: 'world',
   },
   {
-    text: 'Sunlight takes about eight minutes to reach Earth — so you always see the Sun where it was, never where it is.',
+    text: 'Sunlight takes about eight minutes to reach Earth - so you always see the Sun where it was, never where it is.',
     category: 'world',
   },
   {

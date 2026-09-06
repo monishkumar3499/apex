@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 /**
  * The Kairo mark.
  *
- * καιρός is the opportune moment — not time passing, but the *right* point on
+ * καιρός is the opportune moment - not time passing, but the *right* point on
  * it. So the glyph is an orbit with one node marked on it: the ring is the
  * whole span between now and your deadline, the node is the moment you are in,
  * and the core is the goal everything is circling.
@@ -55,7 +55,7 @@ export function KairoMark({
 
       {/*
         The elapsed arc, from the top clockwise to the node. It is what makes
-        the mark directional — you can tell at a glance which way time runs.
+        the mark directional - you can tell at a glance which way time runs.
       */}
       <path
         d="M12 3.75A8.25 8.25 0 0 1 17.83 6.17"
@@ -76,7 +76,7 @@ export function KairoMark({
 /**
  * Mark plus wordmark.
  *
- * One component so the lockup — glyph size, gap, optical baseline — is defined
+ * One component so the lockup - glyph size, gap, optical baseline - is defined
  * once. Every place the logo appeared before this existed had its own spacing,
  * and they did not agree.
  */
@@ -103,7 +103,7 @@ export function KairoLogo({
           // thing on the page allowed to be iridescent, and a flat violet
           // square behind it would cancel that out.
           //
-          // The accent wash is not decoration — plain glass on the dark nav
+          // The accent wash is not decoration - plain glass on the dark nav
           // ground gave the tile almost no edge, so the logo read as floating
           // text with a smudge beside it.
           'glass bg-accent/[0.14] shadow-glow ring-1 ring-inset ring-accent/25',

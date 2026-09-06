@@ -8,7 +8,7 @@ import { MotionConfig, motion, useReducedMotion, type Variants } from 'motion/re
  *
  * The rule this file exists to enforce: animation in Kairo either (a) explains
  * where something came from or went to, or (b) confirms that an action landed.
- * Nothing animates because it looks nice — a study tool that makes a learner
+ * Nothing animates because it looks nice - a study tool that makes a learner
  * wait 400ms for a list to decorate itself is stealing the time it claims to
  * be budgeting.
  *
@@ -114,7 +114,7 @@ export function StaggerChild({
 /**
  * Animates a panel between zero and its natural height.
  *
- * Used for the expandable rows on Today. `height: auto` is the whole trick —
+ * Used for the expandable rows on Today. `height: auto` is the whole trick -
  * Motion measures the content and interpolates to the measured value, which
  * CSS cannot do without a hard-coded max-height that either clips long content
  * or makes short content ease at the wrong rate.

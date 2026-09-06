@@ -14,7 +14,7 @@ const schema = z.object({ status: z.enum(['pending', 'done', 'skipped']) });
  *
  * Completion also writes a study log entry, which is what drives streaks,
  * time-on-task and the pace projection. Doing it here keeps those numbers
- * honest — they reflect work actually marked done, not planned minutes.
+ * honest - they reflect work actually marked done, not planned minutes.
  */
 export const PATCH = route('items.update', async (request, { params }: Params) => {
   const user = await requireUser();

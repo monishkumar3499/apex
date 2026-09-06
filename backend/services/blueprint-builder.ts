@@ -21,7 +21,7 @@ import { logger } from '../logger/pino';
  *
  * The single-call version asked one model for the entire structure. Measured
  * against the live API on a 65-topic plan that is ~6,000 output tokens and
- * **33 seconds** — the largest single component of a build, and output tokens
+ * **33 seconds** - the largest single component of a build, and output tokens
  * cannot be parallelised within one response.
  *
  * So the work is split:
@@ -38,7 +38,7 @@ import { logger } from '../logger/pino';
  * a path to a plan.
  */
 
-/** Outline shape — units only, no topics. */
+/** Outline shape - units only, no topics. */
 interface Outline {
   u: Array<{ t: string; s?: string; w?: number; q?: string[] }>;
 }
@@ -65,7 +65,7 @@ export async function generateBlueprint(params: {
   /**
    * Whose build this is.
    *
-   * A sharded blueprint is the single burstiest thing this app does — an
+   * A sharded blueprint is the single burstiest thing this app does - an
    * outline plus three concurrent topic calls, each of which may retry across
    * several providers. Tagging them with the learner lets the provider gate
    * round-robin between people instead of serving one build to completion
@@ -118,7 +118,7 @@ export async function generateBlueprint(params: {
     return { blueprint: await singleCall(req, ledger, owner), sharded: false, degradedUnits: [] };
   }
 
-  await onProgress?.(`Mapped ${units.length} units — writing topics in parallel`, {
+  await onProgress?.(`Mapped ${units.length} units - writing topics in parallel`, {
     units: units.length,
   });
 
@@ -132,7 +132,7 @@ export async function generateBlueprint(params: {
   // Splitting by count looked balanced and was not: the prompt tells each shard
   // to distribute topics by weight, so a shard holding four high-weight units
   // produced far more than its share. Measured across three shards that came
-  // out as 5,945 / 4,813 / 3,397 output tokens — and since the shards run
+  // out as 5,945 / 4,813 / 3,397 output tokens - and since the shards run
   // concurrently, the largest one alone sets the wall-clock. Weighting the
   // split flattens that.
   const totalWeight = units.reduce((sum, u) => sum + weightOf(u), 0);
@@ -174,7 +174,7 @@ export async function generateBlueprint(params: {
 
   const topicCount = merged.reduce((sum, u) => sum + u.tp.length, 0);
 
-  // Nothing usable came back at all — one full call is better than a failure.
+  // Nothing usable came back at all - one full call is better than a failure.
   if (!merged.length || topicCount < Math.max(6, req.topicTarget * 0.25)) {
     logger.warn(
       { units: merged.length, topicCount, target: req.topicTarget },
@@ -206,7 +206,7 @@ async function singleCall(
     label: 'blueprint',
     temperature: 0.25,
     // A 65-topic blueprint is ~6k tokens of JSON. The headroom above that is
-    // for reasoning models, which bill their thinking against the same budget —
+    // for reasoning models, which bill their thinking against the same budget -
     // at 6000 they spent it all thinking and returned nothing.
     maxTokens: 16_000,
     reasoning: { effort: 'low' },
@@ -237,7 +237,7 @@ type OutlineUnit = { t: string; s?: string; w?: number; q?: string[] };
  *   Dependency rebasing. A shard numbers `dep` against its *own* output,
  *   because it cannot know the global ordinal of a topic another shard has not
  *   written yet. Merging without rebasing points every dependency at the wrong
- *   topic — and since the scheduler orders topologically, that quietly
+ *   topic - and since the scheduler orders topologically, that quietly
  *   reorders the syllabus rather than failing.
  */
 export function mergeShards(
@@ -276,7 +276,7 @@ export function mergeShards(
       claimed.add(match);
 
       merged.push({
-        // The outline's title, scope and search query are authoritative — the
+        // The outline's title, scope and search query are authoritative - the
         // topics call was never asked to improve on them.
         t: outlineUnit.t,
         s: outlineUnit.s ?? match.s,
@@ -330,8 +330,8 @@ const weightOf = (unit: OutlineUnit) => Math.max(1, Math.min(5, Number(unit.w) |
  * spanning units 1, 5 and 9 would be asked to write topics for material whose
  * prerequisites live in another shard.
  *
- * Weight rather than count, because weight is what drives how many topics — and
- * therefore how many output tokens — a shard produces. Since shards run
+ * Weight rather than count, because weight is what drives how many topics - and
+ * therefore how many output tokens - a shard produces. Since shards run
  * concurrently, the build waits on the heaviest one, so balancing weight is
  * what actually shortens the stage. Every shard is guaranteed at least one unit.
  */
@@ -351,7 +351,7 @@ export function splitByWeight(units: OutlineUnit[], parts: number): OutlineUnit[
     const shardsRemaining = count - out.length - 1;
     const unitsRemaining = units.length - index - 1;
 
-    // Close the shard once it has met its share — but never so eagerly that a
+    // Close the shard once it has met its share - but never so eagerly that a
     // later shard would be left with no units at all.
     const metShare = currentWeight >= targetPerShard && shardsRemaining > 0;
     const mustClose = unitsRemaining === shardsRemaining && shardsRemaining > 0;

@@ -57,7 +57,7 @@ export function ResourcePanel({
    * Used where a topic's *other* resources are listed under its primary one:
    * at full size, three of them dwarf the resource the day is actually built
    * around and the panel stops reading as a hierarchy. Same affordances, less
-   * chrome — the thumbnail shrinks and the "why" line is dropped.
+   * chrome - the thumbnail shrinks and the "why" line is dropped.
    */
   compact?: boolean;
 }) {
@@ -171,7 +171,7 @@ export function ResourcePanel({
                 {resource.author && <span className="truncate">{resource.author}</span>}
                 {/*
                   Padded to a real target. As bare text this link measured
-                  42×16 — comfortably under the 44px minimum, and the hardest
+                  42×16 - comfortably under the 44px minimum, and the hardest
                   kind of control to hit, since it sits inline against other
                   text. The negative margin keeps the padding from adding
                   visible space around the row.

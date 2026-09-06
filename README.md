@@ -1,10 +1,10 @@
-# Kairo — an AI prep engine
+# Kairo - an AI prep engine
 
-*καιρός — the opportune moment.*
+*καιρός - the opportune moment.*
 
 Tell Kairo what you are preparing for and by when. It works out whether that is
 an exam or a role, finds the best material that actually exists, and builds a
-day-by-day study map that fits the hours you really have — then coaches you
+day-by-day study map that fits the hours you really have - then coaches you
 through it, drills you on it, and re-cuts it when you fall behind.
 
 ---
@@ -15,7 +15,7 @@ through it, drills you on it, and re-cuts it when you fall behind.
 
 A language model asked to "generate six months of daily study tasks with
 resources" produces a shallow list, arithmetic that does not add up, and URLs
-that do not exist — for a large token bill. So Kairo uses the model for the two
+that do not exist - for a large token bill. So Kairo uses the model for the two
 things it is uniquely good at, and computes everything else.
 
 | Stage | Who does it | Why |
@@ -30,7 +30,7 @@ things it is uniquely good at, and computes everything else.
 Measured on a 26-week GATE plan: **80 topics across 12 units in 26 seconds**,
 for about 15k tokens, with a real day-by-day schedule and verified resources
 attached. The structure is generated as an outline plus three concurrent topic
-calls — one combined call for the same content took 33 seconds, because output
+calls - one combined call for the same content took 33 seconds, because output
 tokens are emitted serially.
 
 ---
@@ -38,7 +38,7 @@ tokens are emitted serially.
 ## What the scheduler guarantees
 
 These are properties of the algorithm, enforced by tests in
-`backend/planner/scheduler.test.ts` — not prompt instructions the model may ignore.
+`backend/planner/scheduler.test.ts` - not prompt instructions the model may ignore.
 
 - **No day is ever scheduled past its capacity.** You give weekday and weekend
   minutes; the plan respects them exactly.
@@ -58,7 +58,7 @@ These are properties of the algorithm, enforced by tests in
 
 | Route | Answers |
 |---|---|
-| `/plan/[id]/today` | What do I study right now — with the resource already open |
+| `/plan/[id]/today` | What do I study right now - with the resource already open |
 | `/plan/[id]/map` | What does the whole plan look like, and where am I in it |
 | `/plan/[id]/library` | Every resource, ranked, with why it was chosen |
 | `/plan/[id]/drill` | Recall practice, scheduled by SM-2 spaced repetition |
@@ -67,7 +67,7 @@ These are properties of the algorithm, enforced by tests in
 
 ---
 
-## The look — Aurora Glass
+## The look - Aurora Glass
 
 Kairo is a daily-use app opened at 6am and at midnight, so the design is
 dark-first and built in three layers that always paint back to front:
@@ -80,14 +80,14 @@ dark-first and built in three layers that always paint back to front:
 
 The rule that keeps it from becoming decoration: **depth encodes state.**
 Something nearer the viewer is more urgent, a panel that lifts is one you are
-meant to act on, and blur means "behind, later, not now" — never merely
+meant to act on, and blur means "behind, later, not now" - never merely
 "pretty". On Today that means the open task is raised and lit while a finished
 one recedes, so you can find your place on the screen without reading a word of
 it.
 
 **The orbit** is the signature graphic, and it is the name drawn: a topic is
 placed once, then returns at 2, 7 and 21 days, which is an orbit rather than a
-queue. It appears three ways, in descending cost — a canvas field
+queue. It appears three ways, in descending cost - a canvas field
 (`components/ui/orbit-field.tsx`) on the landing hero and the build screen, CSS
 rings (`OrbitRings`) wherever the motif should be present rather than the
 subject, and the vertical rail (`Spine`) on every ordered list.
@@ -100,13 +100,13 @@ Three implementation decisions worth knowing before changing any of it:
   today's tasks, not a library booting. The one canvas is 2D with a
   pre-rendered glow sprite, it stops when scrolled off-screen or the tab is
   hidden, and it draws a single static frame under `prefers-reduced-motion`.
-- **Tokens are semantic, never literal** — `accent`, not `violet`. That is what
+- **Tokens are semantic, never literal** - `accent`, not `violet`. That is what
   let the entire app be re-themed by rewriting one file: all ~40 components were
   already asking for "the accent". Violet carries *state*, cyan carries
   *quantity* (progress, counts, throughput), and magenta is at most one
   highlight per screen and never load-bearing.
 - **`backdrop-filter` is the one thing that can drop frames** on a budget
-  phone. `.glass` therefore carries a real opaque fallback — some older Android
+  phone. `.glass` therefore carries a real opaque fallback - some older Android
   WebViews do not support it at all, and without the fallback those users get
   unreadable text over the aurora.
 
@@ -132,13 +132,13 @@ Then enable the sign-in methods you want under **Authentication → Providers**
 
 Under **Authentication → URL Configuration**, set:
 
-- **Site URL** — your public origin, e.g. `http://localhost:3000`
-- **Redirect URLs** — add `<origin>/auth/callback` for every origin you serve
+- **Site URL** - your public origin, e.g. `http://localhost:3000`
+- **Redirect URLs** - add `<origin>/auth/callback` for every origin you serve
   from. Locally that is `http://localhost:3000/auth/callback`.
 
 Then set `APP_ORIGIN` in `frontend/.env` to that same origin. Behind a reverse
-proxy the app cannot derive its own public URL — it sees a plain-HTTP request on
-an internal host — and OAuth redirects will either land on the wrong host or
+proxy the app cannot derive its own public URL - it sees a plain-HTTP request on
+an internal host - and OAuth redirects will either land on the wrong host or
 downgrade HTTPS to HTTP, which silently drops the auth cookie.
 
 `GET /api/health` prints the callback URL it will actually generate. If it does
@@ -147,7 +147,7 @@ not match what Supabase has, sign-in will not complete.
 If you are running with `NEXT_PUBLIC_DEMO_MODE=true`, also run
 [`database/seed-demo-user.sql`](database/seed-demo-user.sql). Demo mode bypasses
 auth and pins every request to a fixed UUID, and every user-owned row carries a
-foreign key to `auth.users` — without that row the first plan insert fails.
+foreign key to `auth.users` - without that row the first plan insert fails.
 
 ### 2. Environment
 
@@ -209,7 +209,7 @@ Kairo/
 │   ├── ai/                      # 8-provider registry, key rotation, adaptive
 │   │                            #   token buckets, fair queue, breaker, chains
 │   ├── curation/                # Resource scoring, dedupe, topic matching
-│   ├── planner/                 # Calendar, scheduler, SM-2 — the core IP
+│   ├── planner/                 # Calendar, scheduler, SM-2 - the core IP
 │   ├── prompts/                 # The prompts, kept small on purpose
 │   ├── services/                # Build pipeline, sharded blueprint generation,
 │   │                            #   coach, drill, progress
@@ -222,7 +222,7 @@ Kairo/
     └── lib/                     # Supabase clients, auth URL rules, API helpers
 ```
 
-`backend/` has no `node_modules` of its own — its imports are pinned to the
+`backend/` has no `node_modules` of its own - its imports are pinned to the
 frontend's copies via aliases in `next.config.js` and `tsconfig.json`. Keep those
 two lists in sync.
 
@@ -238,7 +238,7 @@ two lists in sync.
   short function timeout, move `buildPlan` to a queue or a background worker.
 - **YouTube quota is the real ceiling on resource quality.** 10,000 units/day,
   100 per search. Curation searches once per unit, then only re-searches the
-  topics that sweep left uncovered. Budgets scale with plan size — roughly
+  topics that sweep left uncovered. Budgets scale with plan size - roughly
   1,500–2,500 units for the largest plans.
 - **Blueprint structures are cached across users** by subject, type, level, a
   rounded study-hour bucket, and `BLUEPRINT_VERSION`. Bump that constant
@@ -252,7 +252,7 @@ two lists in sync.
   missing key removes its models from every chain rather than turning them into
   failed attempts.
 - **Two free multipliers, and the second one is the cheaper.** Adding a provider
-  adds a bucket — but *every* provider's env var also accepts a
+  adds a bucket - but *every* provider's env var also accepts a
   **comma-separated list of keys**, and each entry is metered independently by
   the upstream. `GROQ_API_KEY="a,b"` is genuinely twice the allowance.
   `GET /api/health` reports `ai.buckets`; for 10–20 daily learners aim for four
@@ -261,7 +261,7 @@ two lists in sync.
   requests/minute but only **50 per day** on an account under 10 lifetime
   credits. One learner building one six-month plan can spend that alone. Groq
   and Cerebras allow roughly 13,000/day each, for free, so the volume tiers lead
-  on those — which also took the coach's first token from 3–13s to under a
+  on those - which also took the coach's first token from 3–13s to under a
   second.
 - **The buckets learn the real limit.** `TokenBucket` starts at each vendor's
   published RPM, halves its rate on every 429, and creeps back up after 45s of
@@ -278,7 +278,7 @@ two lists in sync.
   tier's primary; `?models=all` probes every model in every chain. Providers
   retire slugs without notice (`openai/gpt-oss-120b:free` now 404s). When
   reordering a chain by hand, do not put two models from the same vendor in the
-  first three slots — those are the slots a burst reaches, so a repeat makes one
+  first three slots - those are the slots a burst reaches, so a repeat makes one
   outage cost two attempts.
 - **Demo mode hides auth bugs.** With `NEXT_PUBLIC_DEMO_MODE=true` the OAuth path
   is never exercised, so sign-in can be completely broken and look fine.

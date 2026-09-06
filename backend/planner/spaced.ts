@@ -51,7 +51,7 @@ export function schedule(state: ReviewState, grade: number): ReviewOutcome {
  * Topic mastery, 0..100.
  *
  * Blends recent accuracy with how far the material has been pushed out by the
- * scheduler — a card answered right once is not mastery, a card at a 40-day
+ * scheduler - a card answered right once is not mastery, a card at a 40-day
  * interval is.
  */
 export function masteryFrom(reviews: ReviewState[], accuracy: number): number {

@@ -47,7 +47,7 @@ export function must<T>(
     // real cause only in `details`. Logging just `message` made those
     // undiagnosable, so carry everything the client gives us.
     logger.error({ op, error: message, details, hint, code }, 'supabase.error');
-    throw new Error(`${op}: ${message}${code ? ` [${code}]` : ''}${details ? ` — ${details}` : ''}`);
+    throw new Error(`${op}: ${message}${code ? ` [${code}]` : ''}${details ? ` - ${details}` : ''}`);
   }
   if (result.data === null || result.data === undefined) {
     throw new Error(`${op}: no rows returned`);

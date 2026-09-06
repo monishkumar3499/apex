@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils';
 /**
  * The one button.
  *
- * `asChild` exists because half the buttons in this app are really links —
+ * `asChild` exists because half the buttons in this app are really links -
  * "Build my prep map", "Drill this topic". Wrapping a `<Link>` in a `<button>`
  * produces a button inside an anchor, which is invalid and breaks keyboard
  * activation; `asChild` merges the styles onto the anchor instead.

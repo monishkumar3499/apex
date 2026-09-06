@@ -29,7 +29,7 @@ const schema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   /*
-    Both may be zero. The rule is on the *total*, not on either kind of day —
+    Both may be zero. The rule is on the *total*, not on either kind of day -
     "I only study at weekends" is a legitimate answer, and a 15-minute weekday
     floor rejected it while happily accepting 20 minutes a week for a year.
     `checkCapacity` below is what actually decides.
@@ -86,7 +86,7 @@ export const POST = route('plans.create', async (request) => {
       {
         error: capacity.message,
         // Echoed so a client can render the shortfall rather than just the
-        // sentence — the wizard shows both numbers on its budget card.
+        // sentence - the wizard shows both numbers on its budget card.
         capacity: {
           totalMinutes: capacity.totalMinutes,
           minimumMinutes: capacity.minimumMinutes,

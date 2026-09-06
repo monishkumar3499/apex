@@ -16,7 +16,7 @@ const OTP_TYPES = new Set<EmailOtpType>(['magiclink', 'signup', 'invite', 'recov
  * depends on provider and on Supabase project settings rather than on anything
  * this app controls:
  *
- *   1. `?code=…`                  PKCE — Google OAuth, and magic links on a
+ *   1. `?code=…`                  PKCE - Google OAuth, and magic links on a
  *                                 project with the PKCE flow enabled.
  *   2. `?token_hash=…&type=…`     the newer email-link shape.
  *   3. `?error=…`                 the provider refused or the learner
@@ -24,7 +24,7 @@ const OTP_TYPES = new Set<EmailOtpType>(['magiclink', 'signup', 'invite', 'recov
  *                                 exception, and it has to be *shown*.
  *
  * Redirects are built on the origin the browser actually used, not on
- * `request.url` — behind the reverse proxy those differ, and the difference is
+ * `request.url` - behind the reverse proxy those differ, and the difference is
  * a sign-in that silently loops back to the login page.
  */
 export async function GET(request: Request) {
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       // Needs the code-verifier cookie the browser client set when the flow
       // started. If the learner began sign-in on a different browser (or the
       // link opened inside an in-app webview), that cookie is absent and the
-      // exchange fails — hence the explicit message rather than a raw error.
+      // exchange fails - hence the explicit message rather than a raw error.
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         logger.warn({ error: error.message }, 'auth.callback.exchange-failed');
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
 
   // Confirm the cookie actually took. Without this a misconfigured cookie
   // domain sends the learner to /app, where middleware bounces them straight
-  // back to /login — an infinite loop with no visible cause.
+  // back to /login - an infinite loop with no visible cause.
   const { data, error: userError } = await supabase.auth.getUser();
   if (userError || !data.user) {
     logger.error({ error: userError?.message }, 'auth.callback.session-not-persisted');

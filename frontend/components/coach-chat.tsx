@@ -134,7 +134,7 @@ export function CoachChat({
     lines high - there, the page scrolls instead of the transcript.
   */
   return (
-    <div className="flex h-[calc(100dvh-var(--workspace-chrome))] flex-col h-sm:h-[calc(100dvh-8rem)]">
+    <div className="flex h-[calc(100dvh-var(--workspace-chrome))] flex-col -mb-tabsafe md:-mb-16 md:h-[calc(100dvh-var(--workspace-chrome))]">
       <div className="no-chain flex-1 overflow-y-auto pb-4">
         {empty ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">

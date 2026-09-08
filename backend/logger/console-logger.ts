@@ -12,8 +12,10 @@ type Fields = Record<string, unknown>;
 const LEVELS = ['debug', 'info', 'warn', 'error', 'fatal'] as const;
 type Level = (typeof LEVELS)[number];
 
+const clean = (val?: string) => val?.replace(/^["']|["']$/g, '').trim().toLowerCase();
+
 function emit(level: Level, a?: Fields | string, b?: string) {
-  const configured = (process.env.LOG_LEVEL ?? 'info').toLowerCase();
+  const configured = clean(process.env.LOG_LEVEL) || 'info';
   if (configured === 'silent') return;
   const floor = LEVELS.indexOf(configured as Level);
   if (floor >= 0 && LEVELS.indexOf(level) < floor) return;
